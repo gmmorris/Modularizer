@@ -1,0 +1,22 @@
+{
+    "name": "Modularizer",
+    "description": "A component which encapsulates basic modularization using the AMD API but in a self contained package rather than on the global object",
+    "version": "0.1.0",
+    "author": "Gidi Meir Morris",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/gmmorris/modularizer.git"
+    },
+    "licenses":[
+        {
+            "type":"MIT",
+            "url":"https://github.com/gmmorris/modularizer/blob/master/LICENSE"
+        }
+    ],
+    "dependencies": {
+    },
+    "devDependencies": {
+        "bower": "~1.2.8"
+    },
+    "keywords":["Grunt","Modularizer.js"]
+}

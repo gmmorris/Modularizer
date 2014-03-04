@@ -1,0 +1,9 @@
+{
+    "name": "modularizer",
+    "version": "0.1.0",
+    "main": "modularizer.js",
+    "devDependencies": {
+    },
+    "ignore": [],
+    "keywords": ["module","AMD","error","handling"]
+}
