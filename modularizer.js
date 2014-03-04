@@ -9,7 +9,7 @@
 
     var Modularizer;
     /**
-     * @namespace The Modularizer Object which encapsulates basic modularization using the AMD API but in a self contained package rather than on the global object
+     * @namespace The Modularizer component which encapsulates basic modularization using the AMD API but in a self contained package rather than on the global object
      *
      * Initialization of the Resource manager's configuration
      * @constructs
@@ -217,7 +217,7 @@
             // call the resouce delivery function, as all the modules have already been defined or instanciated anyway
             deliverPayload.call(this);
         }
-    }
+    };
 
     /**
      * A method for defining a module, a callback which will instanciate it and the resources it needs for instanciation.
@@ -235,11 +235,11 @@
      */
     Modularizer.prototype.define = function (module, resources, callback) {
 
-        // 	as the resources are optional, check to see if perhaps the callback was sent second and is now inside the 'resources' variable
-        if (typeof(resources) == 'function') {
-            callback = resources;
-            resources = [];
-        } else if (!resources || !(resources.length)) {
+      //as the resources are optional, check to see if perhaps the callback was sent second and is now inside the 'resources' variable
+      if (typeof(resources) == 'function') {
+				callback = resources;
+        resources = [];
+     	} else if (!resources || !(resources.length)) {
             // if an invalid resources array has been sent simply replace it with an empty array. hopefully the callback will manage to stomach the lack of parameters
             // TODO: Warning?
             resources = [];
