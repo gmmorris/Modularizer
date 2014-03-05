@@ -79,12 +79,20 @@
         // A method for specifying a module definition inside the package
         // @ module: The name of a module which is known to reside inside the package
 		// @ definedBy: If we wish to specify a definition function which will actually define this module we can do so here
-        this.defines= function (module,defineBy) {
+        this.defines= function (module,prerequisites,defineBy) {
             this.package.modules.definitions[module] = this;
 			
-			if(typeof defineBy == 'function') {
+			if(typeof prerequisites == "function") {
+				definedBy = prerequisites;
+				prerequisites = [];
+			}
+			
+			if(typeof defineBy == 'function' && prerequisites instanceof Array) {
 				definitions = definitions || {};
-				definitions[module] = defineBy;
+				definitions[module] = {
+					def : definedBy,
+					req : prerequisites
+				};
 			}
 
             //return this for chaining capabilities
@@ -103,7 +111,7 @@
 					for(var module in definitions) {
 						if(definitions.hasOwnProperty(module)) {
 							// call the definition at package context
-							this.package.define(module,[],definitions[module]);
+							this.package.define(module,definitions[module].req,definitions[module].def);
 						}
 					}
 				}
