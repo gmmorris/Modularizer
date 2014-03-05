@@ -103,8 +103,7 @@
 					for(var module in definitions) {
 						if(definitions.hasOwnProperty(module)) {
 							// call the definition at package context
-							definitions[module].call(this.package);
-							this.package.trigger("module:ready");
+							this.package.define(module,[],definitions[module]);
 						}
 					}
 				}
