@@ -62,7 +62,8 @@
         debug:false,
 		/* cachbuster */
 		cb:(new Date()).getTime(),
-		loader:false
+		loader:false,
+		base: ''
     };
 	
 	/***
@@ -167,7 +168,7 @@
 		
 		// now that we have added hooks for the load events - fetch the files
 		for(index = 0; index < resourcesToLoad.length;index++) {
-			_loader(resourcesToLoad[index].filePath,(function(res,pckg){
+			_loader(this.config.base + resourcesToLoad[index].filePath,(function(res,pckg){
 				return function(){
 					res.loaded = true;
 					// trigger global package loaded event
@@ -190,87 +191,6 @@
 		}
 	};
 
-    /**
-     * A method for analyzing the package definitions from the config file and building a YUI Loader definition modue for each module and resource specified in the config. It also instanciates the Loader if needed
-     * This is an internal method and shouldn't called from outside
-     */
-    // Modularizer.prototype.parseDependencies = function () {
-// 
-//         if (!this.YUILoader) {
-//             this.YUILoader = new YAHOO.util.YUILoader(this.config.loader);
-//         }
-// 
-//         // Cycle through all packages and build the module definitions
-//         for (var index = 0; index < this.packages.length; index++) {
-// 
-//             var currentPackage = this.packages[index];
-// 
-//             var moduleDependencies = undefined;
-// 
-//             // First we cycle through the package dependencies, if there are any, so that we may define tham as required dependencies for the modules inside the package.
-//             // In addition, for "non module" dependencies (such as CSS or templates) we create a module definition for the loader.
-//             // We do it this way (rather than defining them as modules in the first place is to keep the configuration tidy, since these resources
-//             //	never stand on their own anyway)
-//             if (currentPackage.dependencies) {
-// 
-//                 for (var dependencyIndex = 0; dependencyIndex < currentPackage.dependencies.length; dependencyIndex++) {
-// 
-//                     var currentDependency = currentPackage.dependencies[dependencyIndex];
-// 
-//                     // We are only interested in creating module definitions for  dependencies which have their own resource, and hence, are not self defined modules.
-//                     if (currentDependency.resource) {
-// 
-//                         var dependencyDefinition = {
-//                             name: currentDependency.module,
-//                             type: currentDependency.type,
-//                             path: appendParamsToURL(currentDependency.resource, ResourceManager.cachebuster)
-//                         };
-// 
-//                         // add this dependency as a module in the loader
-//                         this.YUILoader.addModule(dependencyDefinition);
-//                     }
-// 
-//                     if (!moduleDependencies) {
-//                         moduleDependencies = [];
-//                     }
-// 
-//                     moduleDependencies.push(currentDependency.module);
-//                 }
-//             }
-// 
-//             // Cycle through all modules inside the package
-//             for (var moduleIndex = 0; moduleIndex < currentPackage.modules.length; moduleIndex++) {
-// 
-//                 // build a module definition for each module which is defined inside the package
-//                 var loadModuleDefinition = {
-//                     name: currentPackage.modules[moduleIndex],
-//                     type: "js" // packages are always JS files. CSS files are added as depepndencies of packages
-//                 };
-// 
-//                 if (typeof currentPackage.resource == 'string') {
-// 
-//                     var resource = currentPackage.resource;
-//                     resource = appendParamsToURL(resource, ResourceManager.cachebuster);
-// 
-//                     // if it is a full qualified URL, use fullpath instead of path
-//                     if (currentPackage.resource.toLowerCase().indexOf('http') === 0) {
-//                         loadModuleDefinition.fullpath = resource;
-//                     } else {
-//                         loadModuleDefinition.path = resource;
-//                     }
-//                 }
-// 
-//                 // only add the 'requires' property if there in fact are dependencies
-//                 if (moduleDependencies) {
-//                     loadModuleDefinition.requires = moduleDependencies;
-//                 }
-// 
-//                 // add the module definition into the loader
-//                 this.YUILoader.addModule(loadModuleDefinition);
-//             }
-//         }
-//     };
-// 	
 	/***
 	* MODULE MANAGEMENT
 	*/
