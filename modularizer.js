@@ -123,6 +123,32 @@
 	};
 
     /**
+     * Get the value of the "data-modularizer" attribute on the modularizer script tag
+     <code><pre>
+     var src = Modularizer.getTagBase();
+     </pre></code>
+     */
+    Modularizer.prototype.getTagBase = function () {
+        var allScriptElements = document.getElementsByTagName('script');
+		var attr;
+        for (var index = allScriptElements.length; index >= 0; index--) {
+			attr = allScriptElements[index].getAttribute("data-modularizer");
+            if (attr) {
+				return attr;
+            }
+        }
+		return false;
+    };
+	
+	// set default Base config based on attribute on script tag
+	Modularizer.config.base = (function(tagAttribute){
+		if(tagAttribute) {
+			return tagAttribute;
+		}
+		return '';
+	})(Modularizer.prototype.getTagBase());
+
+    /**
      * Register a new file to be added into the manager as a package
      * The method will add the package to the registeredPackages array and return the package's instance for additional details, such as module definitions and dependency definitions
      * @param {string} filePath A path, relative to the base URL in the config, to the package's source JS or CSS file
