@@ -236,7 +236,18 @@
                 }
 
                 // Call the callback, with the dependancies and then store as a loaded module
-                this.modules.instances[module] = definition.callback.apply(this, definition.dependancies);
+				try {
+					this.modules.instances[module] = definition.callback.apply(this, definition.dependancies);					
+				} catch(o_O) {
+					this.log({
+						evt: 'Modularizer.fetchResource: The definition callback for the following moduel threw an exception.',
+						params: {
+							ex: o_O,
+							module: module
+						}
+					});
+					throw o_O;
+				}
             }
 
             this.log('Modularizer.fetchResource: delete module definition.');
