@@ -198,7 +198,7 @@
 		for(index = 0; index < resourcesToLoad.length;index++) {
 			_loader(this.config.base + resourcesToLoad[index].filePath,(function(res,pckg){
 				return function(){
-					res.loaded = true;
+					res.loaded(true);
 					// trigger global package loaded event
 					pckg.trigger("PACKAGE:loaded");
 				};
