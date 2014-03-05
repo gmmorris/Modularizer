@@ -27,8 +27,17 @@
         } else{
             this.config = Modularizer.config;
         }
+		
+		if(!this.config.loader) {
+			if(typeof $ == 'function' && typeof $.getScript == 'function') {
+				this.config.loader = $.getScript;
+			}
+		}
 
-
+	    // The list of packages which have been registered with the resource manager
+		// Modules are contained inside a package.
+		this.packages = [];
+		
         this.modules = {
             // Container of module definitions. A Module definition is a key in the container with the name of the module and inside it is
             // another object which holds a callback to be called after the module is requested and an array of resources (modules) that the
@@ -37,6 +46,9 @@
             // Container of modules which have been instanciated
             instances : {}
         };
+		
+		// Event holder which allows an callback to be specified for all (*) events or specific events on a namespaced module
+		this.events = {};
 
         return this;
     };
@@ -46,8 +58,222 @@
 
     // default config
     Modularizer.config = {
-        debug:false
+		/* should use console log messages */
+        debug:false,
+		/* cachbuster */
+		cb:(new Date()).getTime(),
+		loader:false
     };
+	
+	/***
+	* RESOURCE MANAGEMENT & FETCHING USING YUILOADER
+	*/
+	
+	Modularizer.Resource = function(pckg,filePath){
+		
+		this.filePath = filePath;
+		this.loaded = false;
+		this.package = pckg;
+
+        // A method for specifying a module definition inside the package
+        // @ module: The name of a module which is known to reside inside the package
+        this.defines= function (module) {
+            this.package.modules.definitions[module] = this;
+
+            //return this for chaining capabilities
+            return this;
+        };
+		return this;        
+	};
+
+    /**
+     * Register a new file to be added into the manager as a package
+     * The method will add the package to the registeredPackages array and return the package's instance for additional details, such as module definitions and dependency definitions
+     * @param {string} filePath A path, relative to the base URL in the config, to the package's source JS or CSS file
+     * @example
+     <code><pre>
+     Modularizer.register('scripts/Libraries/jquery/jquery.js');
+     </pre></code>
+     */
+    Modularizer.prototype.register = function (filePath) {
+
+        // Add the package into the Resource manager's registeredPackages list
+		var res = new Modularizer.Resource(this,filePath);
+        this.packages.push(res);
+
+        // return the package for chaining capabilities
+        return res;
+    }
+
+    /**
+     */
+    Modularizer.prototype.load = function (modules, postLoadCallback,context) {
+		if(!this.config.loader) {
+
+	        this.log({
+	            evt: 'Modularizer.load: No loader specified, can\'t load resources.',
+	            params: {
+	                module: modules
+	            }
+	        });
+			return false;
+		}		
+		var _loader = this.config.loader;
+		
+		if(typeof modules == 'string') {
+			modules = [modules];
+		} else if(!(modules instanceof Array)) {
+			throw new Error("Modularizer.load: Invalid resources specified for the load function");
+		}
+		
+		
+		// A resource doesn't necceserily correlate to a single module, as sometimes multiple modules are defined in the same file
+		var resourcesToLoad = [];
+		var modulesToWaitFor = [];
+        for (var index = 0; index < modules.length; index++) {
+			var currModule = modules[index];
+			//not yet instanciated
+			if(!this.modules.instances.hasOwnProperty(currModule)) {
+				if(!this.modules.definitions.hasOwnProperty(currModule)) {
+					// not defined!
+			        this.log({
+			            evt: 'Modularizer.load: No resource defined for module.',
+			            params: {
+			                module: currModule
+			            }
+			        });
+					return false;
+				} 
+				
+				var res = this.modules.definitions[currModule];
+				if(res instanceof Modularizer.Resource) {
+					// this module is still a resource, which means it hasn't had a definition call yet
+					// so we need to fetch it
+					modulesToWaitFor.push(currModule);
+					resourcesToLoad.push(res);			
+				}
+			}					
+		}		
+		
+		//register to module load events
+		var moduleReadyContext = {
+			countDown : modulesToWaitFor.length,
+			callback: postLoadCallback,
+			context : context || window
+		};
+		for(var index = 0; index < modulesToWaitFor.length;index++) {
+			this.on(modulesToWaitFor[index] + ":ready",moduleReadyCallback,moduleReadyContext);
+		}
+		
+		// now that we have added hooks for the load events - fetch the files
+		for(index = 0; index < resourcesToLoad.length;index++) {
+			_loader(resourcesToLoad[index].filePath,(function(res,pckg){
+				return function(){
+					res.loaded = true;
+					// trigger global package loaded event
+					pckg.trigger("PACKAGE:loaded");
+				};
+			})(resourcesToLoad[index],this));
+		}		
+    };
+	
+	/***
+	* An internal use function which creates a closure which is called whenever a module reports readyness.
+	* We call it with a context which contains a list of modules to wait for. Once they are all loaded - we can continue
+	*/
+	function moduleReadyCallback(){
+		// reduce dountdown by one module
+		// when this reaches zero, we know we can execute the final callback
+		this.countDown--;
+		if(this.countDown === 0) {
+			this.callback.call(this.context);
+		}
+	};
+
+    /**
+     * A method for analyzing the package definitions from the config file and building a YUI Loader definition modue for each module and resource specified in the config. It also instanciates the Loader if needed
+     * This is an internal method and shouldn't called from outside
+     */
+    // Modularizer.prototype.parseDependencies = function () {
+// 
+//         if (!this.YUILoader) {
+//             this.YUILoader = new YAHOO.util.YUILoader(this.config.loader);
+//         }
+// 
+//         // Cycle through all packages and build the module definitions
+//         for (var index = 0; index < this.packages.length; index++) {
+// 
+//             var currentPackage = this.packages[index];
+// 
+//             var moduleDependencies = undefined;
+// 
+//             // First we cycle through the package dependencies, if there are any, so that we may define tham as required dependencies for the modules inside the package.
+//             // In addition, for "non module" dependencies (such as CSS or templates) we create a module definition for the loader.
+//             // We do it this way (rather than defining them as modules in the first place is to keep the configuration tidy, since these resources
+//             //	never stand on their own anyway)
+//             if (currentPackage.dependencies) {
+// 
+//                 for (var dependencyIndex = 0; dependencyIndex < currentPackage.dependencies.length; dependencyIndex++) {
+// 
+//                     var currentDependency = currentPackage.dependencies[dependencyIndex];
+// 
+//                     // We are only interested in creating module definitions for  dependencies which have their own resource, and hence, are not self defined modules.
+//                     if (currentDependency.resource) {
+// 
+//                         var dependencyDefinition = {
+//                             name: currentDependency.module,
+//                             type: currentDependency.type,
+//                             path: appendParamsToURL(currentDependency.resource, ResourceManager.cachebuster)
+//                         };
+// 
+//                         // add this dependency as a module in the loader
+//                         this.YUILoader.addModule(dependencyDefinition);
+//                     }
+// 
+//                     if (!moduleDependencies) {
+//                         moduleDependencies = [];
+//                     }
+// 
+//                     moduleDependencies.push(currentDependency.module);
+//                 }
+//             }
+// 
+//             // Cycle through all modules inside the package
+//             for (var moduleIndex = 0; moduleIndex < currentPackage.modules.length; moduleIndex++) {
+// 
+//                 // build a module definition for each module which is defined inside the package
+//                 var loadModuleDefinition = {
+//                     name: currentPackage.modules[moduleIndex],
+//                     type: "js" // packages are always JS files. CSS files are added as depepndencies of packages
+//                 };
+// 
+//                 if (typeof currentPackage.resource == 'string') {
+// 
+//                     var resource = currentPackage.resource;
+//                     resource = appendParamsToURL(resource, ResourceManager.cachebuster);
+// 
+//                     // if it is a full qualified URL, use fullpath instead of path
+//                     if (currentPackage.resource.toLowerCase().indexOf('http') === 0) {
+//                         loadModuleDefinition.fullpath = resource;
+//                     } else {
+//                         loadModuleDefinition.path = resource;
+//                     }
+//                 }
+// 
+//                 // only add the 'requires' property if there in fact are dependencies
+//                 if (moduleDependencies) {
+//                     loadModuleDefinition.requires = moduleDependencies;
+//                 }
+// 
+//                 // add the module definition into the loader
+//                 this.YUILoader.addModule(loadModuleDefinition);
+//             }
+//         }
+//     };
+// 	
+	/***
+	* MODULE MANAGEMENT
+	*/
 
     /**
      * A method which instanciates a module and retrieves it for usage out side of the manager
@@ -75,22 +301,22 @@
 
             // retireve definition
             var definition = this.modules.definitions[module];
-
-            // Make sure we have the needed details (callback and resources)
-            if (!definition.resources) {
-                definition.resources = [];
+			
+            // Make sure we have the needed details (callback and dependancies)
+            if (!definition.dependancies) {
+                definition.dependancies = [];
             }
 
             // If there is no callback, then we return undefined.
             // In such a case, presumably, the module is external and loading the JS file was enough in the first place
             if (definition.callback) {
                 // Fetch each one of the dependency instances
-                for (var index = 0; index < definition.resources.length; index++) {
-                    definition.resources[index] = this.fetchResource(definition.resources[index]);
+                for (var index = 0; index < definition.dependancies.length; index++) {
+                    definition.dependancies[index] = this.fetchResource(definition.dependancies[index]);
                 }
 
-                // Call the callback, with the resources and then store as a loaded module
-                this.modules.instances[module] = definition.callback.apply(this, definition.resources);
+                // Call the callback, with the dependancies and then store as a loaded module
+                this.modules.instances[module] = definition.callback.apply(this, definition.dependancies);
             }
 
             this.log('Modularizer.fetchResource: delete module definition.');
@@ -116,25 +342,26 @@
     /**
      * A helper method for checking whether a specific module has been defined/instanciated.
      * If it HAS been either defined or instanciated, then its dependencies will also have been by now.
-     * @param {Array} resources An array of module names which you wish to make sure have been defined
+     * @param {Array} dependancies An array of module names which you wish to make sure have been defined
      * @example
      <code><pre>
      Modularizer.knows('Router.Items');
      </pre></code>
      */
-    Modularizer.prototype.knows = function (resources) {
+    Modularizer.prototype.knows = function (dependancies) {
 
         // make sure the requested module (resource) is inside an array
-        if (typeof(resources) == 'string') {
-            // replace the single string inside 'resources' with an array whose first cell is the resource
-            resources = [resources];
-        } else if (!resources || !(resources.length)) {
+        if (typeof(dependancies) == 'string') {
+            // replace the single string inside 'dependancies' with an array whose first cell is the resource
+            dependancies = [dependancies];
+        } else if (!dependancies || !(dependancies.length)) {
             // invalid module sent to be checked, return false
             return false;
         }
 
-        for (var index = 0; index < resources.length; index++) {
-            if (!(this.modules.instances.hasOwnProperty(resources[index]) || this.modules.definitions.hasOwnProperty(resources[index]))) {
+        for (var index = 0; index < dependancies.length; index++) {
+            if (!(this.modules.instances.hasOwnProperty(dependancies[index]) || this.modules.definitions.hasOwnProperty(dependancies[index])) ||
+				(this.modules.definitions[dependancies[index]] instanceof Modularizer.Resource)) {
                 // if we haven't instanciated or defined even one of these modules, then the answer is - no! We do not know them all!
                 return false;
             }
@@ -146,7 +373,7 @@
 
     /**
      * A method for actually requesting an instance(s) of a module(s) and a callback for calling after it has been retireved
-     * @param {string} resources An array of resources the inner callback is expecting to recieve. The order of resources in the array is the order by which they will be sent as parameters
+     * @param {string} dependancies An array of resources the inner callback is expecting to recieve. The order of resources in the array is the order by which they will be sent as parameters
      * @param {function} callback A callback function to call with the required resources sent as parameters
      * @example
      <code><pre>
@@ -155,8 +382,8 @@
      });
      </pre></code>
      */
-    Modularizer.prototype.requireSynchronously = function (resources, callback, context) {
-        return this.require(resources, callback, context, true);
+    Modularizer.prototype.requireSynchronously = function (dependancies, callback, context) {
+        return this.require(dependancies, callback, context, true);
     };
 
 
@@ -171,48 +398,45 @@
      });
      </pre></code>
      */
-    Modularizer.prototype.require = function (resources, callback, context, synchronous) {
+    Modularizer.prototype.require = function (dependancies, callback, context, synchronous) {
 
         this.log({
-            evt: 'Modularizer.require: Require resources.',
+            evt: 'Modularizer.require: Require dependancies.',
             params: {
-                resources: resources
+                dependancies: dependancies
             }
         });
 
         context = context || (context = {});
 
         // make sure the requested module (resource) is inside an array
-        if (typeof(resources) == 'string') {
+        if (typeof(dependancies) == 'string') {
             // replace the single string inside 'resources' with an array whose first cell is the resource
-            resources = [resources];
-        } else if (!resources || !(resources.length)) {
+            dependancies = [dependancies];
+        } else if (!dependancies || !(dependancies.length)) {
             // invalid module sent to be required, simply call the callback
-            throw new Error('An invalid resource has been specified for requirment, must be either a module name (string) or an array of module names.');
+            throw new Error('An invalid dependancy has been specified for requirment, must be either a module name (string) or an array of module names.');
         }
 
         // This function fetched the actual resoucres and calls the callback.
         // We will either send it to YUI to call after loading what we need or call it directly
         // if there is no need to actually lao anything
         var deliverPayload = function () {
-            for (var index = 0; index < resources.length; index++) {
+			for (var index = 0; index < dependancies.length; index++) {
                 // get the instances of each dependnecy
-                resources[index] = this.fetchResource(resources[index]);
+                dependancies[index] = this.fetchResource(dependancies[index]);
             }
-
-            // call the callback with the dependency payload
-            callback.apply(context, resources);
+			callback.apply(context,dependancies);	
         };
 
-        if (!this.knows(resources)) {
+        if (!this.knows(dependancies)) {
 
             if (synchronous) {
                 // If the request was demanded as synchronous
-                throw new Error('A resource has been requested synchronously but has not yet been loaded.');
+                throw new Error('A dependancy has been requested synchronously but has not yet been loaded.');
             }
 
-            // Call load, as YUI hasn't yet actually called this module and it's dependancies
-            this.load(resources, deliverPayload);
+            this.load(dependancies, deliverPayload,this);
         } else {
             // call the resouce delivery function, as all the modules have already been defined or instanciated anyway
             deliverPayload.call(this);
@@ -233,17 +457,17 @@
      });
      </pre></code>
      */
-    Modularizer.prototype.define = function (module, resources, callback) {
+    Modularizer.prototype.define = function (module, dependancies, callback) {
 
-      //as the resources are optional, check to see if perhaps the callback was sent second and is now inside the 'resources' variable
-      if (typeof(resources) == 'function') {
-				callback = resources;
-        resources = [];
-     	} else if (!resources || !(resources.length)) {
-            // if an invalid resources array has been sent simply replace it with an empty array. hopefully the callback will manage to stomach the lack of parameters
+      	//as the dependancies are optional, check to see if perhaps the callback was sent second and is now inside the 'dependancies' variable
+      	if (typeof(dependancies) == 'function') {
+		  	callback = dependancies;
+        	dependancies = [];
+		} else if (!dependancies || !(dependancies.length)) {
+            // if an invalid dependancies array has been sent simply replace it with an empty array. hopefully the callback will manage to stomach the lack of parameters
             // TODO: Warning?
-            resources = [];
-        }
+            dependancies = [];
+        } 
 
         // Only add the module definition if there is a callback, otherwise it is pointless as no definition will become an object without a callback to define it, anyway.
         // We will probably have this kind of behaviour if for some reason the YUI loader configuration isn't possible for preventing a file from being loaded twice.
@@ -251,10 +475,21 @@
         if (typeof(callback) == 'function') {
             this.modules.definitions[module] = {
                 callback: callback,
-                resources: resources
+                dependancies: dependancies
             };
         }
-
+		
+		if(dependancies.length) {
+			// if this definition actually requires any resources to be executed, then we might as well fetch them
+			// as we will definitely need them - otherwise this definition wouldn't have been fetch from the server
+            this.load(dependancies,function(){
+				//notify all that this module definition is ready to be used (all it's resources are loaded)
+            	this.trigger(module+":ready");
+            },this);			
+		} else {
+			// no dependancies? Ready to go!
+			this.trigger(module+":ready");
+		}
     };
 
     Modularizer.prototype.log = function (dbg) {
@@ -265,5 +500,94 @@
             }
         }
     };
+	
+	
+	/**
+		INTERNAL EVENT MANGEMENT
+	**/
+	Modularizer.prototype.on = function(event,callback,context){
+		if(typeof event != 'string') {
+	        this.log({
+	            evt: 'Modularizer.on: An invalid (non string) event name has been specified.',
+	            params: {
+	                event: event
+	            }
+	        });
+		} else if(typeof callback != 'function') {
+	        this.log({
+	            evt: 'Modularizer.on: An invalid (non function) event callback has been specified.',
+	            params: {
+	                callback: callback
+	            }
+	        });
+		}
+		event = event.trim().split(":");
+		if(event.length) {
+			if(event.length == 1) {
+				// if no specific event has type has been specified but just the namespace, then
+				// link to the "all" event selector which is *
+				event.push("*");
+			}			
+			
+			var moduleName = event[0];
+			var eventName = event[1];
+			
+			this.events[moduleName] = this.events[moduleName] || {};
+			this.events[moduleName][eventName] = this.events[moduleName][eventName] || [];
+			
+			this.events[moduleName][eventName].push([callback,context || window]);
+		}
+	};
+	
+	Modularizer.prototype.trigger = function(event){
+		if(typeof event != 'string') {
+	        this.log({
+	            evt: 'Modularizer.trigger: An invalid (non string) event name has been specified.',
+	            params: {
+	                event: event
+	            }
+	        });
+		}
+		event = event.trim().split(":");
+		if(event.length) {
+			
+			var moduleName = event[0];
+			var eventName = event[1];
+
+			if(this.events.hasOwnProperty(moduleName)) {
+				if(event.length == 2) {
+					executeEventCallbacks.call(this,moduleName,event[1]);
+				}						
+				executeEventCallbacks.call(this,moduleName,'*');
+				
+				// check module and see if it has any more callbacks attached to it - if not, remove it from the events object all together
+				var foundEvents = false;
+				for(var prop in this.events[moduleName]) {
+					if(this.events[moduleName].hasOwnProperty(prop)) {
+						// found an event callback still on it - do nothing
+						foundEvents = true;
+					}
+				}
+				if(!foundEvents) {
+					// no events bound to this module - remove it from the events object for cleanliness
+					delete this.events[moduleName];
+				}
+			}
+			
+		}		
+	};
+	
+	function executeEventCallbacks(moduleName,eventName){
+		// cycle registered callbacks for event and remove from events object
+		if(this.events.hasOwnProperty(moduleName)) {
+			if(this.events[moduleName].hasOwnProperty(eventName)) {
+				var callbacks = this.events[moduleName][eventName];
+				delete this.events[moduleName][eventName];
+				for(var index = 0; index < callbacks.length;index++) {
+					callbacks[index][0].call(callbacks[index][1]);
+				}					
+			}					
+		}
+	};
 
 })(this);
