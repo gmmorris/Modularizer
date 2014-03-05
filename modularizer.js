@@ -131,7 +131,7 @@
     Modularizer.prototype.getTagBase = function () {
         var allScriptElements = document.getElementsByTagName('script');
 		var attr;
-        for (var index = allScriptElements.length; index >= 0; index--) {
+        for (var index = allScriptElements.length-1; index >= 0; index--) {
 			attr = allScriptElements[index].getAttribute("data-modularizer");
             if (attr) {
 				return attr;
