@@ -399,7 +399,7 @@
             };
         }
 		
-		if(dependancies.length) {
+		if(dependancies.length && !this.knows(dependancies)) {
 			// if this definition actually requires any resources to be executed, then we might as well fetch them
 			// as we will definitely need them - otherwise this definition wouldn't have been fetch from the server
             this.load(dependancies,function(){
