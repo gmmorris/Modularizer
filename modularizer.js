@@ -28,6 +28,13 @@
             this.config = Modularizer.config;
         }
 		
+		// merge config with default values
+		for(var prop in Modularizer.config){
+			if(Modularizer.config.hasOwnProperty(prop) && typeof this.config[prop] == "undefined") {
+				this.config[prop] = Modularizer.config[prop];
+			}
+		}
+		
 		if(!this.config.loader) {
 			if(typeof $ == 'function' && typeof $.getScript == 'function') {
 				this.config.loader = $.getScript;
