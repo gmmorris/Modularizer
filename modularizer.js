@@ -83,14 +83,14 @@
             this.package.modules.definitions[module] = this;
 			
 			if(typeof prerequisites == "function") {
-				definedBy = prerequisites;
+				defineBy = prerequisites;
 				prerequisites = [];
 			}
 			
 			if(typeof defineBy == 'function' && prerequisites instanceof Array) {
 				definitions = definitions || {};
 				definitions[module] = {
-					def : definedBy,
+					def : defineBy,
 					req : prerequisites
 				};
 			}
