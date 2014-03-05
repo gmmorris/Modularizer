@@ -73,17 +73,45 @@
 	Modularizer.Resource = function(pckg,filePath){
 		
 		this.filePath = filePath;
-		this.loaded = false;
 		this.package = pckg;
-
+		
+		var definitions=false;
         // A method for specifying a module definition inside the package
         // @ module: The name of a module which is known to reside inside the package
-        this.defines= function (module) {
+		// @ definedBy: If we wish to specify a definition function which will actually define this module we can do so here
+        this.defines= function (module,defineBy) {
             this.package.modules.definitions[module] = this;
+			
+			if(typeof defineBy == 'function') {
+				definitions = definitions || {};
+				definitions[module] = defineBy;
+			}
 
             //return this for chaining capabilities
             return this;
         };
+
+		var loaded = false;
+		this.loaded = function(val){
+			// if a value is being set
+			if(val) {
+				loaded = val;
+				
+				// now that this resource is loaded - see if it has any definition overrides and if 
+				// so execute them and notify that this module is has been loaded
+				if(definitions) {
+					for(var module in definitions) {
+						if(definitions.hasOwnProperty(module)) {
+							// call the definition at package context
+							definitions[module].call(this.package);
+							this.package.trigger("module:ready");
+						}
+					}
+				}
+			}
+			return loaded;
+		};
+		
 		return this;        
 	};
 
