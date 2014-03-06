@@ -624,7 +624,7 @@
 			case 'js':
 				fileTag = document.createElement('script');
 				fileTag.setAttribute("type","text/javascript");
-				fileTag.setAttribute("src", filePat);
+				fileTag.setAttribute("src", filePath);
 			break;
 		}
 		
