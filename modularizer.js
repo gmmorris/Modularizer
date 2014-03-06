@@ -36,8 +36,10 @@
 		}
 		
 		if(!this.config.loader) {
-			if(typeof $ == 'function' && typeof $.getScript == 'function') {
+			if(this.config.detectJQuery && typeof $ == 'function' && typeof $.getScript == 'function') {
 				this.config.loader = $.getScript;
+			} else {
+				this.config.loader = loadFile;
 			}
 		}
 
@@ -70,6 +72,7 @@
 		/* cachbuster */
 		cb:(new Date()).getTime(),
 		loader:false,
+		detectJQuery:true,
 		base: ''
     };
 	
@@ -588,5 +591,62 @@
 			}					
 		}
 	};
+	
+	/**
+	* File Handling
+	**/
+	var lastScriptOnPage;
+	function loadFile(filePath, fileType,callback){
+		
+		// get las tscript tag on page or use the last one created as a reference
+		lastScriptOnPage = lastScriptOnPage || (function(){
+			var scripts = document.getElementsByTagName("script");
+			return scripts[scripts.length-1];
+		})();
+		
+		if(typeof fileType == "function") {
+			callback = fileType;
+			fileType = null;
+		}
+		if(typeof callback != 'function') {
+			callback = false;
+		}
+		
+		var fileTag;		
+		switch(fileType) {
+			case 'css':
+				var fileref=document.createElement("link")
+				fileTag.setAttribute("rel", "stylesheet")
+				fileTag.setAttribute("type", "text/css")
+				fileTag.setAttribute("href", filePath)
+				break;
+			default:
+			case 'js':
+				fileTag = document.createElement('script');
+				fileTag.setAttribute("type","text/javascript");
+				fileTag.setAttribute("src", filePat);
+			break;
+		}
+		
+		if(callback) {
+		    if (fileTag.readyState){  //IE
+		        fileTag.onreadystatechange = function(){
+		            if (fileTag.readyState == "loaded" || fileTag.readyState == "complete"){
+		                fileTag.onreadystatechange = null;
+		                callback();
+		            }
+		        };
+		    } else {  //Others
+		        fileTag.onload = function(){
+		            callback();
+		        };
+		    }
+		}
+		
+		if(fileTag) {
+			lastScriptOnPage.parentNode.insertBefore(fileTag, lastScriptOnPage.nextSibling);			
+			lastScriptOnPage = fileTag;
+		}
+	}
 
 })(this);
