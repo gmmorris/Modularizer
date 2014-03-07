@@ -221,7 +221,7 @@
 			var currModule = modules[index];
 			//not yet instanciated
 			if(!this.modules.instances.hasOwnProperty(currModule)) {
-				if(!this.modules.definitions.hasOwnProperty(currModule)) {
+				if(!this.modules.definitions.hasOwnProperty(currModule) && !this.fn.hasOwnProperty(currModule)) {
 					// not defined!
 			        this.log({
 			            evt: 'Modularizer.load: No resource defined for module.',
