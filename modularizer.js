@@ -420,7 +420,11 @@
      */
     Modularizer.prototype.require = function (dependancies, callback, context, synchronous) {
 		if(!(dependancies instanceof Array)) {
-        	throw new Error('Modularizer.require: A non array argument has been specified as the list of dependancies.');			
+			if(typeof dependancies == 'string') {
+				dependancies = [dependancies];
+			} else {
+				throw new Error('Modularizer.require: A non array argument has been specified as the list of dependancies.');							
+			}
 		}
 		if(typeof callback != "function") {
 			// if no funciton callback has been specified we assume the require simply wished to fetch the module definition from
