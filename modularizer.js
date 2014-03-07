@@ -77,6 +77,21 @@
     };
 	
 	/***
+	* INTERNAL MODULES
+	* Modules which are defined by default by the Modularizer.
+	* If a user module with the same name is specified, the user module will take precedance.
+	* These functions will be called in the context of the Modularaizer package itself
+	*/
+	Modularizer.prototype.fn = {
+		/***
+		* Return the current package
+		*/
+		'~' : function(){
+			return this;
+		}
+	};
+	
+	/***
 	* RESOURCE MANAGEMENT & FETCHING USING YUILOADER
 	*/
 	
@@ -331,6 +346,9 @@
             this.log('Modularizer.fetchResource: retreive loaded module.');
             // return the instance from the list
             return this.modules.instances[module];
+        } else if (this.fn.hasOwnProperty(module)) {
+            // return the cutom fn instance
+            return this.fn[module].call(this);
         } else {
             this.log('Modularizer.fetchResource: the module requested hasn\'t been loaded.');
             // Return undefined... presumably no instance was requested, or it is a mistake.
@@ -362,7 +380,7 @@
         }
 
         for (var index = 0; index < dependancies.length; index++) {
-            if (!(this.modules.instances.hasOwnProperty(dependancies[index]) || this.modules.definitions.hasOwnProperty(dependancies[index])) ||
+            if (!(this.modules.instances.hasOwnProperty(dependancies[index]) || this.modules.definitions.hasOwnProperty(dependancies[index])|| this.fn.hasOwnProperty(dependancies[index])) ||
 				(this.modules.definitions[dependancies[index]] instanceof Modularizer.Resource)) {
                 // if we haven't instanciated or defined even one of these modules, then the answer is - no! We do not know them all!
                 return false;
@@ -401,6 +419,14 @@
      </pre></code>
      */
     Modularizer.prototype.require = function (dependancies, callback, context, synchronous) {
+		if(!(dependancies instanceof Array)) {
+        	throw new Error('Modularizer.require: A non array argument has been specified as the list of dependancies.');			
+		}
+		if(typeof callback != "function") {
+			// if no funciton callback has been specified we assume the require simply wished to fetch the module definition from
+			// the server - we continue as usual, but withou a callback
+			callback = false;
+		}
 
         this.log({
             evt: 'Modularizer.require: Require dependancies.',
@@ -428,7 +454,10 @@
                 // get the instances of each dependnecy
                 dependancies[index] = this.fetchResource(dependancies[index]);
             }
-			callback.apply(context,dependancies);	
+			if(callback) {
+				callback.apply(context,dependancies);
+			}
+			return dependancies;
         };
 
         if (!this.knows(dependancies)) {
@@ -441,7 +470,7 @@
             this.load(dependancies, deliverPayload,this);
         } else {
             // call the resouce delivery function, as all the modules have already been defined or instanciated anyway
-            deliverPayload.call(this);
+            return deliverPayload.call(this);
         }
     };
 
