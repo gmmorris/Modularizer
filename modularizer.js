@@ -334,7 +334,7 @@
                 } else {
                     // Fetch each one of the dependency instances
                     for (var index = 0; index < definition.dependancies.length; index++) {
-                        definition.dependancies[index] = this.fetchResource(definition.dependancies[index],callqueue);
+                        definition.dependancies[index] = this.fetchResource(definition.dependancies[index],callqueue.slice(0));
                     }
                 }
 
