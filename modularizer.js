@@ -290,13 +290,29 @@
      });
      </pre></code>
      */
-    Modularizer.prototype.fetchResource = function (module) {
+    Modularizer.prototype.fetchResource = function (module,callqueue) {
         this.log({
             evt: 'Modularizer.fetchResource: begin.',
             params: {
                 module: module
             }
         });
+//
+        if(callqueue && contains(callqueue,module)) {
+            callqueue.push(module);
+            var errorMessage = 'Modularizer.fetchResource: A circular dependancy has been detected. The module "'+module+'" is required by one of it\'s dependencies as seen in the following dependancy tree:' + callqueue.join("->");
+            this.log({
+                evt: errorMessage,
+                type:'error',
+                params: {
+                    module: module
+                }
+            });
+            throw new Error(errorMessage);
+        } else {
+            callqueue = callqueue || [];
+            callqueue.push(module);
+        }
 
         // Check to see if a definition for this module exists.
         // If, in fact, one does exist, this means we have not yet instanciated it.
@@ -307,18 +323,19 @@
 
             // retireve definition
             var definition = this.modules.definitions[module];
-			
-            // Make sure we have the needed details (callback and dependancies)
-            if (!definition.dependancies) {
-                definition.dependancies = [];
-            }
 
             // If there is no callback, then we return undefined.
             // In such a case, presumably, the module is external and loading the JS file was enough in the first place
             if (definition.callback) {
-                // Fetch each one of the dependency instances
-                for (var index = 0; index < definition.dependancies.length; index++) {
-                    definition.dependancies[index] = this.fetchResource(definition.dependancies[index]);
+
+                // Make sure we have the needed details (callback and dependancies)
+                if (!definition.dependancies) {
+                    definition.dependancies = [];
+                } else {
+                    // Fetch each one of the dependency instances
+                    for (var index = 0; index < definition.dependancies.length; index++) {
+                        definition.dependancies[index] = this.fetchResource(definition.dependancies[index],callqueue);
+                    }
                 }
 
                 // Call the callback, with the dependancies and then store as a loaded module
@@ -326,7 +343,7 @@
 					this.modules.instances[module] = definition.callback.apply(this, definition.dependancies);					
 				} catch(o_O) {
 					this.log({
-						evt: 'Modularizer.fetchResource: The definition callback for the following moduel threw an exception.',
+						evt: 'Modularizer.fetchResource: The definition callback for the following module threw an exception.',
 						params: {
 							ex: o_O,
 							module: module
@@ -447,7 +464,7 @@
             dependancies = [dependancies];
         } else if (!dependancies || !(dependancies.length)) {
             // invalid module sent to be required, simply call the callback
-            throw new Error('An invalid dependancy has been specified for requirment, must be either a module name (string) or an array of module names.');
+            throw new Error('Modularizer.require: An invalid dependancy has been specified for requirment, must be either a module name (string) or an array of module names.');
         }
 
         // This function fetched the actual resoucres and calls the callback.
@@ -681,5 +698,43 @@
 			lastScriptOnPage = fileTag;
 		}
 	}
+
+    /***
+     * INTERNAL FUNCTIONS
+     */
+    var indexOf = function(haystack, needle) {
+        if(arguments.length == 1) {
+            if(this instanceof Array) {
+                needle = haystack;
+                haystack = this;
+            }
+        }
+
+        if(typeof Array.prototype.indexOf === 'function') {
+            indexOf = Array.prototype.indexOf;
+        } else {
+            /**
+             * Older IEs don't have indexOf on Arrays
+             * */
+            indexOf = function(needle) {
+                var index = -1;
+
+                for(var currItemIndex = 0; currItemIndex < this.length; currItemIndex++) {
+                    if(this[currItemIndex] === needle) {
+                        index = currItemIndex;
+                        break;
+                    }
+                }
+
+                return index;
+            };
+        }
+
+        return indexOf.call(haystack, needle);
+    };
+
+    var contains = function(haystack, needle) {
+        return (indexOf.call(haystack,needle) >= 0);
+    };
 
 })(this);
