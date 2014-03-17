@@ -124,13 +124,19 @@
             return this;
         };
 
-		var loaded = false;
+		var state = RESOURCE_STATE.registered;
+		this.loading = function(val){
+			// if a value is being set
+			if(val) {
+				state = RESOURCE_STATE.loading;
+			}
+			return (state === RESOURCE_STATE.loading);
+		};
 		this.loaded = function(val){
 			// if a value is being set
 			if(val) {
-				loaded = val;
-				
-				// now that this resource is loaded - see if it has any definition overrides and if 
+				state = RESOURCE_STATE.loaded;
+				// now that this resource is loaded - see if it has any definition overrides and if
 				// so execute them and notify that this module is has been loaded
 				if(definitions) {
 					for(var module in definitions) {
@@ -141,10 +147,16 @@
 					}
 				}
 			}
-			return loaded;
+			return (state === RESOURCE_STATE.loaded);
 		};
 		
 		return this;        
+	};
+
+	var RESOURCE_STATE = {
+		registered:0,
+		loading:1,
+		loaded:2
 	};
 
     /**
@@ -237,10 +249,12 @@
 					// this module is still a resource, which means it hasn't had a definition call yet
 					// so we need to fetch it
 					modulesToWaitFor.push(currModule);
-					resourcesToLoad.push(res);			
+					if(!res.loading()) {
+						resourcesToLoad.push(res);
+					}
 				}
-			}					
-		}		
+			}
+		}
 		
 		//register to module load events
 		var moduleReadyContext = {
@@ -248,12 +262,14 @@
 			callback: postLoadCallback,
 			context : context || window
 		};
+
 		for(var index = 0; index < modulesToWaitFor.length;index++) {
 			this.on(modulesToWaitFor[index] + ":ready",moduleReadyCallback,moduleReadyContext);
 		}
 		
 		// now that we have added hooks for the load events - fetch the files
 		for(index = 0; index < resourcesToLoad.length;index++) {
+			resourcesToLoad[index].loading(true);
 			_loader(this.config.base + resourcesToLoad[index].filePath,(function(res,pckg){
 				return function(){
 					res.loaded(true);
@@ -261,7 +277,7 @@
 					pckg.trigger("PACKAGE:loaded");
 				};
 			})(resourcesToLoad[index],this));
-		}		
+		}
     };
 	
 	/***
