@@ -336,14 +336,19 @@
 			context: context || window
 		};
 
-		for (index = 0; index < modulesToWaitFor.length; index++) {
-			this.on(modulesToWaitFor[index] + ":ready", moduleReadyCallback, moduleReadyContext);
+		if(modulesToWaitFor.length || resourcesToLoad.length) {
+			for (index = 0; index < modulesToWaitFor.length; index++) {
+				this.on(modulesToWaitFor[index] + ":ready", moduleReadyCallback, moduleReadyContext);
+			}
+
+			// now that we have added hooks for the load events - fetch the files
+			for (index = 0; index < resourcesToLoad.length; index++) {
+				resourcesToLoad[index].load();
+			}
+		} else if(typeof moduleReadyContext.callback === "function") {
+			moduleReadyContext.callback.call(moduleReadyContext.context);
 		}
 
-		// now that we have added hooks for the load events - fetch the files
-		for (index = 0; index < resourcesToLoad.length; index++) {
-			resourcesToLoad[index].load();
-		}
 	};
 
 	/***
