@@ -173,7 +173,7 @@
 		this.load=function(){
 			this.loading(true);
 
-			if(this.prereq) {
+			if(this.prereq && !pckg.knows(this.prereq)) {
 				pckg.load(this.prereq,loadResource,{
 					res:this,
 					pckg:pckg
@@ -181,7 +181,6 @@
 			} else {
 				loadResource(this,pckg);
 			}
-
 		};
 
 		this.shouldDefine = function(module){
@@ -336,7 +335,7 @@
 			context: context || window
 		};
 
-		if(modulesToWaitFor.length || resourcesToLoad.length) {
+		if(modulesToWaitFor.length) {
 			for (index = 0; index < modulesToWaitFor.length; index++) {
 				this.on(modulesToWaitFor[index] + ":ready", moduleReadyCallback, moduleReadyContext);
 			}
@@ -345,10 +344,9 @@
 			for (index = 0; index < resourcesToLoad.length; index++) {
 				resourcesToLoad[index].load();
 			}
-		} else if(typeof moduleReadyContext.callback === "function") {
+		} else if(typeof moduleReadyContext.callback == "function") {
 			moduleReadyContext.callback.call(moduleReadyContext.context);
 		}
-
 	};
 
 	/***
@@ -524,7 +522,7 @@
 	 */
 	Modularizer.prototype.require = function (dependancies, callback, context, synchronous) {
 		if (!(dependancies instanceof Array)) {
-			if (typeof dependancies === 'string') {
+			if (typeof dependancies == 'string') {
 				dependancies = [dependancies];
 			} else {
 				throw new Error('Modularizer.require: A non array argument has been specified as the list of dependancies.');
