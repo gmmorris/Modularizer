@@ -344,7 +344,7 @@
 			for (index = 0; index < resourcesToLoad.length; index++) {
 				resourcesToLoad[index].load();
 			}
-		} else if(typeof moduleReadyContext.callback == "function") {
+		} else if(typeof moduleReadyContext.callback === "function") {
 			moduleReadyContext.callback.call(moduleReadyContext.context);
 		}
 	};
@@ -677,6 +677,7 @@
 	};
 
 	Modularizer.prototype.trigger = function (event) {
+		this.log("Triggered event: " + event);
 		if (typeof event != 'string') {
 			this.log({
 				evt: 'Modularizer.trigger: An invalid (non string) event name has been specified.',
