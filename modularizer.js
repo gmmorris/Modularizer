@@ -251,6 +251,15 @@
 		return false;
 	};
 
+	Modularizer.prototype.log = function (dbg) {
+		if (this.config.debug) {
+			try { //for ie8
+				console.log(dbg);
+			} catch (e) {
+			}
+		}
+	};
+
 	// set default Base config based on attribute on script tag
 	Modularizer.config.base = (function (tagAttribute) {
 		if (tagAttribute) {
@@ -329,14 +338,17 @@
 					return false;
 				}
 
-				var res = this.modules.definitions[currModule];
-				if (res instanceof Modularizer.Resource) {
+				var def = this.modules.definitions[currModule];
+				if (def instanceof Modularizer.Resource) {
 					// this module is still a resource, which means it hasn't had a definition call yet
 					// so we need to fetch it
 					modulesToWaitFor.push(currModule);
-					if (!res.loading() && !contains(resourcesToLoad,res)) {
-						resourcesToLoad.push(res);
+					if (!def.loading() && !contains(resourcesToLoad,def)) {
+						resourcesToLoad.push(def);
 					}
+				} else if(def instanceof Modularizer.Module && !def.ready()) {
+					// we know this module but it isn't ready for usage yet (its waiting for another resource to load) so wait for it
+					modulesToWaitFor.push(currModule);
 				}
 			}
 		}
@@ -486,7 +498,7 @@
 	Modularizer.prototype.knows = function (dependancies) {
 
 		// make sure the requested module (resource) is inside an array
-		if (typeof(dependancies) == 'string') {
+		if (typeof(dependancies) === 'string') {
 			// replace the single string inside 'dependancies' with an array whose first cell is the resource
 			dependancies = [dependancies];
 		} else if (!dependancies || !(dependancies.length)) {
@@ -623,34 +635,42 @@
 		// We will probably have this kind of behaviour if for some reason the YUI loader configuration isn't possible for preventing a file from being loaded twice.
 		// Hopefully we will never see this sort of behaviour.
 		if (typeof(callback) === 'function') {
-			this.modules.definitions[module] = {
-				callback: callback,
-				dependancies: dependancies
-			};
-		}
-
-		if (dependancies.length && !this.knows(dependancies)) {
-			// if this definition actually requires any resources to be executed, then we might as well fetch them
-			// as we will definitely need them - otherwise this definition wouldn't have been fetch from the server
-			this.load(dependancies, function () {
-				//notify all that this module definition is ready to be used (all it's resources are loaded)
+			var moduleDefinition = this.modules.definitions[module] = new ModuleDefinition(callback,dependancies);
+			if (dependancies.length && !this.knows(dependancies)) {
+				// if this definition actually requires any resources to be executed, then we might as well fetch them
+				// as we will definitely need them - otherwise this definition wouldn't have been fetch from the server
+				this.load(dependancies, function () {
+					moduleDefinition.ready(true);
+					//notify all that this module definition is ready to be used (all it's resources are loaded)
+					this.trigger(module + ":ready");
+				}, this);
+			} else {
+				// no dependancies? Ready to go!
+				moduleDefinition.ready(true);
 				this.trigger(module + ":ready");
-			}, this);
-		} else {
-			// no dependancies? Ready to go!
-			this.trigger(module + ":ready");
-		}
-	};
-
-	Modularizer.prototype.log = function (dbg) {
-		if (this.config.debug) {
-			try { //for ie8
-				console.log(dbg);
-			} catch (e) {
 			}
 		}
 	};
 
+	/***
+	 * Module component which describes a specific module definition
+	 * @param callback (function) The callback that sintanciates the module or provides the prototype from which instances are made
+	 * @param dependancies (array[string]) List of module names which this module definition needs before it can be used
+	 * @returns {window.Modularizer.Module}
+	 * @constructor
+	 */
+	var ModuleDefinition = Modularizer.Module = function(callback,dependancies){
+		var isReady = false;
+		this.ready = function(val){
+			if(typeof val == 'boolean') {
+				isReady = val;
+			}
+			return isReady;
+		};
+		this.callback = callback;
+		this.dependancies = dependancies;
+		return this;
+	};
 
 	/**
 	 INTERNAL EVENT MANGEMENT
