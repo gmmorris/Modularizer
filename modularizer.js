@@ -111,8 +111,8 @@
 		this.defines = function (module, prerequisites, defineBy) {
 			this.package.modules.definitions[module] = this;
 
-			this.modules = this.modules || [];
-			this.modules.push(module);
+			var modules = this.modules = this.modules || [];
+			modules.push(module);
 
 			if (typeof prerequisites === "function") {
 				defineBy = prerequisites;
@@ -125,6 +125,19 @@
 					def: defineBy,
 					req: prerequisites
 				};
+
+				// very often a resource will contain two modules which have a dependancy between them - lets make
+				// sure none of the depenadencies specifoed for this module are already defined in this resource
+				if(prerequisites.length) {
+					prerequisites = filter(prerequisites,function(prereqModule){
+						return modules.indexOf(prereqModule) === -1;
+					});
+				}
+				if(this.prereq && this.prereq.length) {
+					this.prereq = filter(prerequisites,function(prereqModule){
+						return (prereqModule !== module);
+					});
+				}
 
 				// If we have prerequisits find their modules so that we can register to their load event
 				// we have to do this to prevent resources from being loaded before their prerequisites
@@ -823,5 +836,48 @@
 	var contains = function (haystack, needle) {
 		return (indexOf.call(haystack, needle) >= 0);
 	};
+
+	var filter = (function(){
+		if (Array.prototype.filter){
+			return function(arr,func){
+				return arr.filter(func);
+			};
+		} else {
+			var filter = function(fun /*, thisArg */) {
+				"use strict";
+
+				if (this === void 0 || this === null)
+					throw new TypeError();
+
+				var t = Object(this);
+				var len = t.length >>> 0;
+				if (typeof fun != "function")
+					throw new TypeError();
+
+				var res = [];
+				var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
+				for (var i = 0; i < len; i++)
+				{
+					if (i in t)
+					{
+						var val = t[i];
+
+						// NOTE: Technically this should Object.defineProperty at
+						//       the next index, as push can be affected by
+						//       properties on Object.prototype and Array.prototype.
+						//       But that method's new, and collisions should be
+						//       rare, so use the more-compatible alternative.
+						if (fun.call(thisArg, val, i, t))
+							res.push(val);
+					}
+				}
+
+				return res;
+			};
+			return function(arr,func){
+				return filter.call(arr,func);
+			};
+		}
+	})();
 
 })(this);
