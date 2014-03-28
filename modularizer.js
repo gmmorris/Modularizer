@@ -334,7 +334,7 @@
 					// this module is still a resource, which means it hasn't had a definition call yet
 					// so we need to fetch it
 					modulesToWaitFor.push(currModule);
-					if (!res.loading()) {
+					if (!res.loading() && !contains(resourcesToLoad,res)) {
 						resourcesToLoad.push(res);
 					}
 				}
