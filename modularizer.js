@@ -355,6 +355,7 @@
 
 		//register to module load events
 		var moduleReadyContext = {
+			modules:modulesToWaitFor,
 			countDown: modulesToWaitFor.length,
 			callback: postLoadCallback,
 			context: context || window
@@ -385,7 +386,7 @@
 		if (this.countDown === 0) {
 			this.callback.call(this.context);
 		}
-	};
+	}
 
 	/***
 	 * MODULE MANAGEMENT
@@ -506,11 +507,20 @@
 			return false;
 		}
 
+		var isCompletelyUnknownToUs,isKnownButNotLoaded, isLoadedButNotReady, hasDef, def;
 		for (var index = 0; index < dependancies.length; index++) {
-			if (!(this.modules.instances.hasOwnProperty(dependancies[index]) || this.modules.definitions.hasOwnProperty(dependancies[index]) || this.fn.hasOwnProperty(dependancies[index])) ||
-				(this.modules.definitions[dependancies[index]] instanceof Modularizer.Resource)) {
-				// if we haven't instanciated or defined even one of these modules, then the answer is - no! We do not know them all!
+			hasDef = this.modules.definitions.hasOwnProperty(dependancies[index]);
+			// if we haven't instanciated or defined even one of these modules, then the answer is - no! We do not know them all!
+			isCompletelyUnknownToUs = !(this.modules.instances.hasOwnProperty(dependancies[index]) || hasDef || this.fn.hasOwnProperty(dependancies[index]));
+			if (isCompletelyUnknownToUs) {
 				return false;
+			} else if(hasDef) {
+				def = this.modules.definitions[dependancies[index]];
+				isKnownButNotLoaded = (def instanceof Modularizer.Resource);
+				isLoadedButNotReady = (def instanceof Modularizer.Module && !def.ready());
+				if(isKnownButNotLoaded || isLoadedButNotReady) {
+					return false;
+				}
 			}
 		}
 
@@ -523,11 +533,11 @@
 	 * @param {string} dependancies An array of resources the inner callback is expecting to recieve. The order of resources in the array is the order by which they will be sent as parameters
 	 * @param {function} callback A callback function to call with the required resources sent as parameters
 	 * @example
-	 <code><pre>
-	 Modularizer.require('Router.Items', function(itemsRouter) {
-     itemsRouter.route('!');
-     });
-	 </pre></code>
+	 * <code><pre>
+	 * Modularizer.require('Router.Items', function(itemsRouter) {
+     * itemsRouter.route('!');
+     * });
+	 * </pre></code>
 	 */
 	Modularizer.prototype.requireSynchronously = function (dependancies, callback, context) {
 		return this.require(dependancies, callback, context, true);
@@ -659,7 +669,7 @@
 	 * @returns {window.Modularizer.Module}
 	 * @constructor
 	 */
-	var ModuleDefinition = Modularizer.Module = function(callback,dependancies){
+	var ModuleDefinition = Modularizer.Module = function(name,callback,dependancies){
 		var isReady = false;
 		this.ready = function(val){
 			if(typeof val == 'boolean') {
