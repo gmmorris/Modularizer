@@ -669,7 +669,7 @@
 	 * @returns {window.Modularizer.Module}
 	 * @constructor
 	 */
-	var ModuleDefinition = Modularizer.Module = function(name,callback,dependancies){
+	var ModuleDefinition = Modularizer.Module = function(callback,dependancies){
 		var isReady = false;
 		this.ready = function(val){
 			if(typeof val == 'boolean') {
