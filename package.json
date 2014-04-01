@@ -1,7 +1,7 @@
 {
     "name": "Modularizer",
     "description": "A component which encapsulates basic modularization using the AMD API but in a self contained package rather than on the global object",
-    "version": "0.0.1",
+    "version": "0.2.0",
     "author": "Gidi Meir Morris",
     "repository": {
         "type": "git",

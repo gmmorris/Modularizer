@@ -1,7 +1,7 @@
 /**
  * @name Modularizer.js
  * @author Gidi Meir Morris, 2014
- * @version 0.1
+ * @version 0.2.0
  *
  */
 (function (window, undefined) {
@@ -15,11 +15,11 @@
 	 * @constructs
 	 * @param {object} config A configuration object for the YUI Loader
 	 * @example
-	 <code><pre>
-	 var package = new Modularizer({
-        debug : true
-     });
-	 </pre></code>
+	 * <code><pre>
+	 * var package = new Modularizer({
+     *    debug : true
+     * });
+	 * </pre></code>
 	 */
 	Modularizer = window.Modularizer = function (config) {
 		if (typeof config === 'object') {
@@ -235,9 +235,9 @@
 
 	/**
 	 * Get the value of the "data-modularizer" attribute on the modularizer script tag
-	 <code><pre>
-	 var src = Modularizer.getTagBase();
-	 </pre></code>
+	 * <code><pre>
+	 * var src = Modularizer.getTagBase();
+	 * </pre></code>
 	 */
 	Modularizer.prototype.getTagBase = function () {
 		var allScriptElements = document.getElementsByTagName('script');
@@ -273,9 +273,9 @@
 	 * The method will add the package to the registeredPackages array and return the package's instance for additional details, such as module definitions and dependency definitions
 	 * @param {string} filePath A path, relative to the base URL in the config, to the package's source JS or CSS file
 	 * @example
-	 <code><pre>
-	 Modularizer.register('scripts/Libraries/jquery/jquery.js');
-	 </pre></code>
+	 * <code><pre>
+	 * Modularizer.register('scripts/Libraries/jquery/jquery.js');
+	 * </pre></code>
 	 */
 	Modularizer.prototype.register = function (filePath) {
 
@@ -396,10 +396,10 @@
 	 * A method which instanciates a module and retrieves it for usage out side of the manager
 	 * @param {string} module The name of the module whose instance you wish to fetch
 	 * @example
-	 <code><pre>
-	 Modularizer.fetchResource('Lib.Monkey');
-	 });
-	 </pre></code>
+	 * <code><pre>
+	 * Modularizer.fetchResource('Lib.Monkey');
+	 * });
+	 * </pre></code>
 	 */
 	Modularizer.prototype.fetchResource = function (module, callqueue) {
 		this.log({
@@ -492,9 +492,9 @@
 	 * If it HAS been either defined or instanciated, then its dependencies will also have been by now.
 	 * @param {Array} dependancies An array of module names which you wish to make sure have been defined
 	 * @example
-	 <code><pre>
-	 Modularizer.knows('Router.Items');
-	 </pre></code>
+	 * <code><pre>
+	 * Modularizer.knows('Router.Items');
+	 * </pre></code>
 	 */
 	Modularizer.prototype.knows = function (dependancies) {
 
@@ -549,11 +549,11 @@
 	 * @param {string} resources An array of resources the inner callback is expecting to recieve. The order of resources in the array is the order by which they will be sent as parameters
 	 * @param {function} callback A callback function to call with the required resources sent as parameters
 	 * @example
-	 <code><pre>
-	 Modularizer.require('Router.Items', function(itemsRouter) {
-     itemsRouter.route('!');
-     });
-	 </pre></code>
+	 * <code><pre>
+	 * Modularizer.require('Router.Items', function(itemsRouter) {
+     * itemsRouter.route('!');
+     * });
+	 * </pre></code>
 	 */
 	Modularizer.prototype.require = function (dependancies, callback, context, synchronous) {
 		if (!(dependancies instanceof Array)) {
@@ -621,13 +621,13 @@
 	 * @param {Array} resources An array of resource names (module names) which need to be sent to the callback as parameters
 	 * @param {function} callback A callback function to call with the required resources sent as parameters. It is expected to return a reference to the instance.
 	 * @example
-	 <code><pre>
-	 Modularizer.define('Router.Items', ['Engine.MVC'], function(MVCEngine) {
-     ItemsRouter = MVCEngine.Instanciate('Router.Items');
-
-     return ItemsRouter;
-     });
-	 </pre></code>
+	 * <code><pre>
+	 * Modularizer.define('Router.Items', ['Engine.MVC'], function(MVCEngine) {
+	 * ItemsRouter = MVCEngine.Instanciate('Router.Items');
+	 *
+	 * return ItemsRouter;
+	 * });
+	 *  </pre></code>
 	 */
 	Modularizer.prototype.define = function (module, dependancies, callback) {
 
@@ -683,17 +683,17 @@
 	};
 
 	/**
-	 INTERNAL EVENT MANGEMENT
+	 *  INTERNAL EVENT MANGEMENT
 	 **/
 	Modularizer.prototype.on = function (event, callback, context) {
-		if (typeof event != 'string') {
+		if (typeof event !== 'string') {
 			this.log({
 				evt: 'Modularizer.on: An invalid (non string) event name has been specified.',
 				params: {
 					event: event
 				}
 			});
-		} else if (typeof callback != 'function') {
+		} else if (typeof callback !== 'function') {
 			this.log({
 				evt: 'Modularizer.on: An invalid (non function) event callback has been specified.',
 				params: {
@@ -721,7 +721,7 @@
 
 	Modularizer.prototype.trigger = function (event) {
 		this.log("Triggered event: " + event);
-		if (typeof event != 'string') {
+		if (typeof event !== 'string') {
 			this.log({
 				evt: 'Modularizer.trigger: An invalid (non string) event name has been specified.',
 				params: {
@@ -784,11 +784,11 @@
 			return scripts[scripts.length - 1];
 		})();
 
-		if (typeof fileType == "function") {
+		if (typeof fileType === "function") {
 			callback = fileType;
 			fileType = null;
 		}
-		if (typeof callback != 'function') {
+		if (typeof callback !== 'function') {
 			callback = false;
 		}
 
