@@ -128,25 +128,25 @@
 
 				// very often a resource will contain two modules which have a dependancy between them - lets make
 				// sure none of the depenadencies specifoed for this module are already defined in this resource
-				if(prerequisites.length) {
-					prerequisites = filter(prerequisites,function(prereqModule){
+				if (prerequisites.length) {
+					prerequisites = filter(prerequisites, function (prereqModule) {
 						return modules.indexOf(prereqModule) === -1;
 					});
 				}
-				if(this.prereq && this.prereq.length) {
-					this.prereq = filter(prerequisites,function(prereqModule){
+				if (this.prereq && this.prereq.length) {
+					this.prereq = filter(prerequisites, function (prereqModule) {
 						return (prereqModule !== module);
 					});
 				}
 
 				// If we have prerequisits find their modules so that we can register to their load event
 				// we have to do this to prevent resources from being loaded before their prerequisites
-				if(prerequisites.length) {
+				if (prerequisites.length) {
 					this.prereq = this.prereq || [];
 					var res;
-					for(var resourceIndex = 0; resourceIndex < prerequisites.length;resourceIndex++) {
+					for (var resourceIndex = 0; resourceIndex < prerequisites.length; resourceIndex++) {
 						res = pckg.getResourceByModule(prerequisites[resourceIndex]);
-						if(!res) {
+						if (!res) {
 							throw new Error("Modularizer.Resource.defines: A prerequisite has been specified for a module which is unknown to Modularizer");
 						}
 						this.prereq.push(prerequisites[resourceIndex]);
@@ -183,26 +183,26 @@
 			}
 			return (state === RESOURCE_STATE.loaded);
 		};
-		this.load=function(){
+		this.load = function () {
 			this.loading(true);
 
-			if(this.prereq && !pckg.knows(this.prereq)) {
-				pckg.load(this.prereq,loadResource,{
-					res:this,
-					pckg:pckg
+			if (this.prereq && !pckg.knows(this.prereq)) {
+				pckg.load(this.prereq, loadResource, {
+					res: this,
+					pckg: pckg
 				});
 			} else {
-				loadResource(this,pckg);
+				loadResource(this, pckg);
 			}
 		};
 
-		this.shouldDefine = function(module){
-			if(!this.modules) {
+		this.shouldDefine = function (module) {
+			if (!this.modules) {
 				return false;
 			}
 
-			for(var index = 0; index < this.modules.length;index++) {
-				if(this.modules[index] === module) {
+			for (var index = 0; index < this.modules.length; index++) {
+				if (this.modules[index] === module) {
 					return true;
 				}
 			}
@@ -221,7 +221,7 @@
 			pckg.trigger("PACKAGE:loaded");
 		};
 	};
-	var loadResource = function(res,pckg){
+	var loadResource = function (res, pckg) {
 		res = res || this.res;
 		pckg = pckg || this.pckg;
 		pckg.config.loader(pckg.config.base + res.filePath, onResourceLoadedClosure(res, pckg));
@@ -290,10 +290,10 @@
 	/**
 	 */
 	Modularizer.prototype.getResourceByModule = function (module) {
-		var res= false;
-		for(var index= 0; index < this.packages.length && !res;index++) {
-			if(this.packages[index].shouldDefine(module)) {
-				res= this.packages[index];
+		var res = false;
+		for (var index = 0; index < this.packages.length && !res; index++) {
+			if (this.packages[index].shouldDefine(module)) {
+				res = this.packages[index];
 			}
 		}
 		return res;
@@ -343,10 +343,10 @@
 					// this module is still a resource, which means it hasn't had a definition call yet
 					// so we need to fetch it
 					modulesToWaitFor.push(currModule);
-					if (!def.loading() && !contains(resourcesToLoad,def)) {
+					if (!def.loading() && !contains(resourcesToLoad, def)) {
 						resourcesToLoad.push(def);
 					}
-				} else if(def instanceof Modularizer.Module && !def.ready()) {
+				} else if (def instanceof Modularizer.Module && !def.ready()) {
 					// we know this module but it isn't ready for usage yet (its waiting for another resource to load) so wait for it
 					modulesToWaitFor.push(currModule);
 				}
@@ -355,13 +355,13 @@
 
 		//register to module load events
 		var moduleReadyContext = {
-			modules:modulesToWaitFor,
+			modules: modulesToWaitFor,
 			countDown: modulesToWaitFor.length,
 			callback: postLoadCallback,
 			context: context || window
 		};
 
-		if(modulesToWaitFor.length) {
+		if (modulesToWaitFor.length) {
 			for (index = 0; index < modulesToWaitFor.length; index++) {
 				this.on(modulesToWaitFor[index] + ":ready", moduleReadyCallback, moduleReadyContext);
 			}
@@ -370,7 +370,7 @@
 			for (index = 0; index < resourcesToLoad.length; index++) {
 				resourcesToLoad[index].load();
 			}
-		} else if(typeof moduleReadyContext.callback === "function") {
+		} else if (typeof moduleReadyContext.callback === "function") {
 			moduleReadyContext.callback.call(moduleReadyContext.context);
 		}
 	};
@@ -507,18 +507,18 @@
 			return false;
 		}
 
-		var isCompletelyUnknownToUs,isKnownButNotLoaded, isLoadedButNotReady, hasDef, def;
+		var isCompletelyUnknownToUs, isKnownButNotLoaded, isLoadedButNotReady, hasDef, def;
 		for (var index = 0; index < dependancies.length; index++) {
 			hasDef = this.modules.definitions.hasOwnProperty(dependancies[index]);
 			// if we haven't instanciated or defined even one of these modules, then the answer is - no! We do not know them all!
 			isCompletelyUnknownToUs = !(this.modules.instances.hasOwnProperty(dependancies[index]) || hasDef || this.fn.hasOwnProperty(dependancies[index]));
 			if (isCompletelyUnknownToUs) {
 				return false;
-			} else if(hasDef) {
+			} else if (hasDef) {
 				def = this.modules.definitions[dependancies[index]];
 				isKnownButNotLoaded = (def instanceof Modularizer.Resource);
 				isLoadedButNotReady = (def instanceof Modularizer.Module && !def.ready());
-				if(isKnownButNotLoaded || isLoadedButNotReady) {
+				if (isKnownButNotLoaded || isLoadedButNotReady) {
 					return false;
 				}
 			}
@@ -645,7 +645,7 @@
 		// We will probably have this kind of behaviour if for some reason the YUI loader configuration isn't possible for preventing a file from being loaded twice.
 		// Hopefully we will never see this sort of behaviour.
 		if (typeof(callback) === 'function') {
-			var moduleDefinition = this.modules.definitions[module] = new ModuleDefinition(callback,dependancies);
+			var moduleDefinition = this.modules.definitions[module] = new ModuleDefinition(callback, dependancies);
 			if (dependancies.length && !this.knows(dependancies)) {
 				// if this definition actually requires any resources to be executed, then we might as well fetch them
 				// as we will definitely need them - otherwise this definition wouldn't have been fetch from the server
@@ -669,10 +669,10 @@
 	 * @returns {window.Modularizer.Module}
 	 * @constructor
 	 */
-	var ModuleDefinition = Modularizer.Module = function(callback,dependancies){
+	var ModuleDefinition = Modularizer.Module = function (callback, dependancies) {
 		var isReady = false;
-		this.ready = function(val){
-			if(typeof val == 'boolean') {
+		this.ready = function (val) {
+			if (typeof val == 'boolean') {
 				isReady = val;
 			}
 			return isReady;
@@ -867,13 +867,13 @@
 		return (indexOf.call(haystack, needle) >= 0);
 	};
 
-	var filter = (function(){
-		if (Array.prototype.filter){
-			return function(arr,func){
+	var filter = (function () {
+		if (Array.prototype.filter) {
+			return function (arr, func) {
 				return arr.filter(func);
 			};
 		} else {
-			var filter = function(fun /*, thisArg */) {
+			var filter = function (fun /*, thisArg */) {
 				"use strict";
 
 				if (this === void 0 || this === null)
@@ -886,10 +886,8 @@
 
 				var res = [];
 				var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
-				for (var i = 0; i < len; i++)
-				{
-					if (i in t)
-					{
+				for (var i = 0; i < len; i++) {
+					if (i in t) {
 						var val = t[i];
 
 						// NOTE: Technically this should Object.defineProperty at
@@ -904,8 +902,8 @@
 
 				return res;
 			};
-			return function(arr,func){
-				return filter.call(arr,func);
+			return function (arr, func) {
+				return filter.call(arr, func);
 			};
 		}
 	})();
