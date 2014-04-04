@@ -59,6 +59,12 @@
 		// Event holder which allows an callback to be specified for all (*) events or specific events on a namespaced module
 		this.events = {};
 
+		if(typeof this.config.timeout === 'number') {
+			this.timer = new Timer(this.config.timeout,this);
+		} else {
+			this.timer = false;
+		}
+
 		return this;
 	};
 
@@ -69,10 +75,13 @@
 	Modularizer.config = {
 		/* should use console log messages */
 		debug: false,
-		/* cachbuster */
-		cb: (new Date()).getTime(),
+		/* no cachbuster by default */
+		cb: false,
+		/* no loader function is provided by default, but we do ry and detect jQuery by default */
 		loader: false,
 		detectJQuery: true,
+		/* by default give a 3 second timeout */
+		timeout:3000,
 		base: ''
 	};
 
@@ -95,7 +104,7 @@
 	 * RESOURCE MANAGEMENT & FETCHING USING YUILOADER
 	 */
 
-	Modularizer.Resource = function (pckg, filePath) {
+	var ResourceDefinition = Modularizer.Resource = function (pckg, filePath) {
 
 		this.filePath = filePath;
 		this.package = pckg;
@@ -224,7 +233,7 @@
 	var loadResource = function (res, pckg) {
 		res = res || this.res;
 		pckg = pckg || this.pckg;
-		pckg.config.loader(pckg.config.base + res.filePath, onResourceLoadedClosure(res, pckg));
+		pckg.config.loader(pckg.config.base + res.filePath + (pckg.config.cb? pckg.config.cb : ''), onResourceLoadedClosure(res, pckg));
 	};
 
 	var RESOURCE_STATE = {
@@ -280,7 +289,7 @@
 	Modularizer.prototype.register = function (filePath) {
 
 		// Add the package into the Resource manager's registeredPackages list
-		var res = new Modularizer.Resource(this, filePath);
+		var res = new ResourceDefinition(this, filePath);
 		this.packages.push(res);
 
 		// return the package for chaining capabilities
@@ -301,9 +310,9 @@
 
 	/**
 	 */
-	Modularizer.prototype.load = function (modules, postLoadCallback, context) {
+	Modularizer.prototype.load = function (modules, postLoadCallback, context, forModule) {
+		var msg;
 		if (!this.config.loader) {
-
 			this.log({
 				evt: 'Modularizer.load: No loader specified, can\'t load resources.',
 				params: {
@@ -316,7 +325,9 @@
 		if (typeof modules === 'string') {
 			modules = [modules];
 		} else if (!(modules instanceof Array)) {
-			throw new Error("Modularizer.load: Invalid resources specified for the load function");
+			msg = "Modularizer.load: Invalid resources specified for the load function";
+			this.log(msg);
+			throw new Error(msg);
 		}
 
 
@@ -329,24 +340,20 @@
 			if (!this.modules.instances.hasOwnProperty(currModule)) {
 				if (!this.modules.definitions.hasOwnProperty(currModule) && !this.fn.hasOwnProperty(currModule)) {
 					// not defined!
-					this.log({
-						evt: 'Modularizer.load: No resource defined for module.',
-						params: {
-							module: currModule
-						}
-					});
-					return false;
+					msg = 'Modularizer.load: No resource defined for the module ' + currModule;
+					this.log(msg);
+					throw new Error(msg);
 				}
 
 				var def = this.modules.definitions[currModule];
-				if (def instanceof Modularizer.Resource) {
+				if (def instanceof ResourceDefinition) {
 					// this module is still a resource, which means it hasn't had a definition call yet
 					// so we need to fetch it
 					modulesToWaitFor.push(currModule);
 					if (!def.loading() && !contains(resourcesToLoad, def)) {
 						resourcesToLoad.push(def);
 					}
-				} else if (def instanceof Modularizer.Module && !def.ready()) {
+				} else if (def instanceof ModuleDefinition && !def.ready()) {
 					// we know this module but it isn't ready for usage yet (its waiting for another resource to load) so wait for it
 					modulesToWaitFor.push(currModule);
 				}
@@ -361,14 +368,25 @@
 			context: context || window
 		};
 
+		if(forModule && this.config.timeout) {
+			moduleReadyContext.forModule = forModule;
+		}
+
 		if (modulesToWaitFor.length) {
 			for (index = 0; index < modulesToWaitFor.length; index++) {
-				this.on(modulesToWaitFor[index] + ":ready", moduleReadyCallback, moduleReadyContext);
+
+				var moduleName = modulesToWaitFor[index];
+				if(this.timer){
+					this.timer.start(moduleName);
+				}
+				this.on(moduleName + ":ready", moduleReadyCallback, moduleReadyContext);
 			}
 
 			// now that we have added hooks for the load events - fetch the files
-			for (index = 0; index < resourcesToLoad.length; index++) {
-				resourcesToLoad[index].load();
+			if(resourcesToLoad.length) {
+				for (index = 0; index < resourcesToLoad.length; index++) {
+					resourcesToLoad[index].load();
+				}
 			}
 		} else if (typeof moduleReadyContext.callback === "function") {
 			moduleReadyContext.callback.call(moduleReadyContext.context);
@@ -430,7 +448,7 @@
 		// So we request the module's dependnecies' instances and pass them as parameters to the module's callback.
 		// The callback is expected to return an instance of the module to be stored for future retrieval
 		if (this.modules.definitions.hasOwnProperty(module)) {
-			this.log('Modularizer.fetchResource: retreive and call module definition.');
+			this.log('Modularizer.fetchResource: retrieve and call module definition.');
 
 			// retireve definition
 			var definition = this.modules.definitions[module];
@@ -516,8 +534,8 @@
 				return false;
 			} else if (hasDef) {
 				def = this.modules.definitions[dependancies[index]];
-				isKnownButNotLoaded = (def instanceof Modularizer.Resource);
-				isLoadedButNotReady = (def instanceof Modularizer.Module && !def.ready());
+				isKnownButNotLoaded = (def instanceof ResourceDefinition);
+				isLoadedButNotReady = (def instanceof ModuleDefinition && !def.ready());
 				if (isKnownButNotLoaded || isLoadedButNotReady) {
 					return false;
 				}
@@ -539,9 +557,9 @@
      * });
 	 * </pre></code>
 	 */
-	Modularizer.prototype.requireSynchronously = function (dependancies, callback, context) {
-		return this.require(dependancies, callback, context, true);
-	};
+//	Modularizer.prototype.requireSynchronously = function (dependancies, callback, context) {
+//		return this.require(dependancies, callback, context, true);
+//	};
 
 
 	/**
@@ -651,9 +669,15 @@
 				// as we will definitely need them - otherwise this definition wouldn't have been fetch from the server
 				this.load(dependancies, function () {
 					moduleDefinition.ready(true);
+
+					// extend timeout timer
+					if(this.timer){
+						this.timer.mark(module);
+					}
+
 					//notify all that this module definition is ready to be used (all it's resources are loaded)
 					this.trigger(module + ":ready");
-				}, this);
+				}, this, module);
 			} else {
 				// no dependancies? Ready to go!
 				moduleDefinition.ready(true);
@@ -664,7 +688,7 @@
 
 	/***
 	 * Module component which describes a specific module definition
-	 * @param callback (function) The callback that sintanciates the module or provides the prototype from which instances are made
+	 * @param callback (function) The callback that instanciates the module or provides the prototype from which instances are made
 	 * @param dependancies (array[string]) List of module names which this module definition needs before it can be used
 	 * @returns {window.Modularizer.Module}
 	 * @constructor
@@ -672,7 +696,7 @@
 	var ModuleDefinition = Modularizer.Module = function (callback, dependancies) {
 		var isReady = false;
 		this.ready = function (val) {
-			if (typeof val == 'boolean') {
+			if (typeof val === 'boolean') {
 				isReady = val;
 			}
 			return isReady;
@@ -703,7 +727,7 @@
 		}
 		event = event.trim().split(":");
 		if (event.length) {
-			if (event.length == 1) {
+			if (event.length === 1) {
 				// if no specific event has type has been specified but just the namespace, then
 				// link to the "all" event selector which is *
 				event.push("*");
@@ -736,7 +760,7 @@
 			var eventName = event[1];
 
 			if (this.events.hasOwnProperty(moduleName)) {
-				if (event.length == 2) {
+				if (event.length === 2) {
 					executeEventCallbacks.call(this, moduleName, event[1]);
 				}
 				executeEventCallbacks.call(this, moduleName, '*');
@@ -758,6 +782,144 @@
 		}
 	};
 
+	/***
+	 * Check that the current state of the modularizer is valid in the sense that it isn't waiting on something to be
+	 * initialized but isn't actually performing any file fetching or object initialization OR that it has been waiting for them
+	 * too long.
+	 */
+	function checkModularizerValidity(modularizerPackage){
+		var inValididty = false;
+		if(modularizerPackage.events) {
+			for(var eventComponentName in modularizerPackage.events) {
+				if(modularizerPackage.events.hasOwnProperty(eventComponentName)) {
+					// we have events which are still being listened for
+					// this ,means we have at least one component which is waiting for another component.
+					// we will now check to see if it is waiting for the 'ready' event which means the other one hasn't completed
+					// its initialization process yet, which mean we are not in a valid state for this call as this call is ,eamt
+					// to test the timeout period
+					var componentEvents = modularizerPackage.events[eventComponentName];
+					if(componentEvents.hasOwnProperty('ready') && componentEvents.ready instanceof Array && componentEvents.ready.length) {
+						// this means there are callbacks waiting for the ready event on this component
+						inValididty = inValididty || [];
+						inValididty.push(eventComponentName);
+					}
+				}
+			}
+		}
+
+		if(inValididty) {
+			// In *normal timeout mode*, this is enough for us to know that the modularizer is invalid, so we'll
+			// add this name to the list and move on
+			if(modularizerPackage.config.debug) {
+				// In *debug timeout mode* we want more information as to why the component isn't ready, so we'll go digging to
+				// identify circular references etc.
+				// lets take a look at the context of the callback and perhaps we can infur from that who is waiting for this module and why
+				inValididty = narrowDownInvalidModuleNames(modularizerPackage,inValididty);
+			}
+			return new InvalidState(inValididty);
+		}
+		//valid
+		return true;
+	}
+
+	/***
+	 * Go over a list of module names which are invalid and narrow them down to the root problems
+	 * The idea is that if A is waiting for B which is waiting for C and C is hanging, then all three are seen
+	 * as invalid, but we only really care about C because he is the root of the problem - narrow down that list!
+	 */
+	function narrowDownInvalidModuleNames(modularizerPackage, listOfInvalidModules, depQueue){
+		var eventComponentName, narrowedDownList,
+			moduleDefs = modularizerPackage.modules.definitions,
+			moduleIndex, moduleCount = listOfInvalidModules.length;
+
+		// keep track of the dep queue - we need this to identify a circular reference
+		depQueue = depQueue || [];
+
+		for(moduleIndex = 0; moduleIndex  < moduleCount; moduleIndex++) {
+			eventComponentName = listOfInvalidModules[moduleIndex];
+			if(contains(depQueue,eventComponentName)) {
+				// we have already investigated this component... this means we're in a circular reference
+				listOfInvalidModules[moduleIndex] = {
+					type:ModuleDefinition,
+					name:eventComponentName,
+					problem:'has a circular reference with ' + depQueue.pop()
+				};
+			} else if(moduleDefs.hasOwnProperty(eventComponentName)) {
+				if(moduleDefs[eventComponentName] instanceof ModuleDefinition) {
+					// module is ready? remove from list
+					if(!moduleDefs[eventComponentName].ready()) {
+						// module is not ready? Figure out why
+						narrowedDownList = narrowDownInvalidModuleNames(
+							modularizerPackage,
+							moduleDefs[eventComponentName].dependancies.slice(0),
+							// clone Queue and add this new module to the end of it
+							cloneAndPush(depQueue,eventComponentName));
+
+						if(narrowedDownList.length) {
+							// this module is waiting for other - add the mto the list
+
+							// skip to the next module (jumping over those we just evaluated
+							moduleCount += narrowedDownList.length - 1;
+							moduleIndex += narrowedDownList.length - 1;
+
+							// convert the list of modules to an argument list for "splice" by adding the index of the current module (that we're removing) as
+							// first arg then "1" as second as we wish to remove that module form the list and then adding the narrowedDownList of modules
+							narrowedDownList.splice(0,0,moduleIndex,1);
+							listOfInvalidModules.splice.apply(listOfInvalidModules,narrowedDownList);
+						} else {
+							//else this module isn't waiting for anyone else, it is the source of the problem - leave it in the list
+							listOfInvalidModules[moduleIndex] = {
+								type:ModuleDefinition,
+								name:eventComponentName,
+								problem:'never reported completion, perhaps an internal error in it caused it to fail'
+							};
+						}
+					}
+				} else if(moduleDefs[eventComponentName] instanceof ResourceDefinition) {
+					if(moduleDefs[eventComponentName].loaded()) {
+						// resource loaded? then it failed to define its module - this is the problem
+						listOfInvalidModules[moduleIndex] = {
+							type:ResourceDefinition,
+							path:moduleDefs[eventComponentName].filePath,
+							problem:'didn\'t contain a definition for ' + eventComponentName
+						};
+					} else {
+						// the resource hasn't loaded? That's the problem
+						listOfInvalidModules[moduleIndex] = {
+							type:ResourceDefinition,
+							path:moduleDefs[eventComponentName].filePath,
+							problem:'wasn\'t loaded at all'
+						};
+					}
+				}
+			}
+		}
+
+		if(listOfInvalidModules.length) {
+			//remove duplicates, as often a single point of failure brings down multiple components
+			listOfInvalidModules = (function(list){
+				var keys = {r:{},m:{}};
+				return filter(list,function(item){
+					if(typeof item === 'string') {
+						if(!keys.m.hasOwnProperty(item)) {
+							keys.m[item] = true;
+							return true;
+						}
+					} else if(item.type === ResourceDefinition && !keys.r.hasOwnProperty(item.path)) {
+						keys.r[item.path] = true;
+						return true;
+					} else if(item.type === ModuleDefinition && !keys.m.hasOwnProperty(item.name)) {
+						keys.m[item.name] = true;
+						return true;
+					}
+					return false;
+				});
+			})(listOfInvalidModules);
+		}
+
+		return listOfInvalidModules;
+	}
+
 	function executeEventCallbacks(moduleName, eventName) {
 		// cycle registered callbacks for event and remove from events object
 		if (this.events.hasOwnProperty(moduleName)) {
@@ -769,7 +931,7 @@
 				}
 			}
 		}
-	};
+	}
 
 	/**
 	 * File Handling
@@ -795,10 +957,10 @@
 		var fileTag;
 		switch (fileType) {
 			case 'css':
-				var fileref = document.createElement("link")
-				fileTag.setAttribute("rel", "stylesheet")
-				fileTag.setAttribute("type", "text/css")
-				fileTag.setAttribute("href", filePath)
+				var fileref = document.createElement("link");
+				fileTag.setAttribute("rel", "stylesheet");
+				fileTag.setAttribute("type", "text/css");
+				fileTag.setAttribute("href", filePath);
 				break;
 			default:
 			case 'js':
@@ -811,7 +973,7 @@
 		if (callback) {
 			if (fileTag.readyState) {  //IE
 				fileTag.onreadystatechange = function () {
-					if (fileTag.readyState == "loaded" || fileTag.readyState == "complete") {
+					if (fileTag.readyState === "loaded" || fileTag.readyState === "complete") {
 						fileTag.onreadystatechange = null;
 						callback();
 					}
@@ -830,8 +992,84 @@
 	}
 
 	/***
-	 * INTERNAL FUNCTIONS
+	 * INTERNAL FUNCTIONS AND MEMBERS
 	 */
+	var Timer = function(timeout,modularizerPackage){
+		// the predefined timeout duration
+		this.timeout = timeout;
+
+		// the setTimeout timeout response
+		this.checkTimeout = null;
+		/***
+		 * Start a timer with the current timout.
+		 * Whenever the timeout is executed it will check if any resources are being loaded and whether any modules are marked as not ready.
+		 * If no resources are loading but modules aren't ready that means that a problem has occurred and we trigger a timeout.
+		 */
+		this.start = function(id){
+			if(this.checkTimeout) {
+				this.clear();
+			}
+			if(id) {
+				if(timedModules.hasOwnProperty(id)) {
+					delete timedModules[id];
+				} else {
+					timedModules[id] = true;
+				}
+			}
+
+			this.checkTimeout = setTimeout(function(){
+				var invalidState = checkModularizerValidity(modularizerPackage);
+				if(invalidState !== true && typeof invalidState === 'object') {
+					throw new Error("Modularizer.timer: A timeout has occurred. " + invalidState.toString());
+				}
+			},this.timeout);
+		};
+
+		// an object to hold references to all of the modules which are currently waiting to be initialized
+		// we use this to test the validity of the modularizer for timeout needs
+		var timedModules = {};
+		/***
+		 * Mark that a module has been marked as ready and extend the time to the timeout check
+		 */
+		this.mark = function(id){
+			if(this.checkTimeout) {
+				this.clear();
+				this.start(id);
+			}
+		};
+
+		this.clear = function(){
+			clearTimeout(this.checkTimeout);
+			this.checkTimeout = null;
+		};
+		return this;
+	};
+
+	var InvalidState = function(invalidModules){
+		invalidModules = invalidModules || [];
+
+		this.toString = function(){
+			if(invalidModules.length) {
+				var messages = [];
+				for(var index = 0; index < invalidModules.length;index++) {
+					if(typeof invalidModules[index] === 'string') {
+						messages.push(invalidModules[index]);
+					} else if(typeof invalidModules[index] === 'object') {
+						if(invalidModules[index].type === ResourceDefinition) {
+							messages.push("The resource at path '" + invalidModules[index].path + "' " + invalidModules[index].problem);
+						} else if(invalidModules[index].type === ModuleDefinition) {
+							messages.push("The module named '" + invalidModules[index].name + "' " + invalidModules[index].problem);
+						}
+					}
+				}
+				return "The following components are have not been initialized on time:" + messages.join(', ');
+			}
+			return 'The Modularizer has timed out, but no specific modules could be narrowed down to the source of the problem.';
+		};
+
+		return this;
+	};
+
 	var indexOf = function (haystack, needle) {
 		if (arguments.length == 1) {
 			if (this instanceof Array) {
@@ -907,5 +1145,12 @@
 			};
 		}
 	})();
+
+	// clone an array and push an element into the new clone
+	var cloneAndPush = function(queue,module){
+		queue = queue.slice(0);
+		queue.push(module);
+		return queue;
+	};
 
 })(this);
