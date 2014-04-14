@@ -82,7 +82,19 @@
 		detectJQuery: true,
 		/* by default give a 3 second timeout */
 		timeout:3000,
-		base: ''
+		base: '',
+		/**
+		 * How should requirement which are defined for a module which is unknown be treated? Strictly or Leniently?
+		 * True - yes, treat strictly and hence throw an error.
+		 * False - no, treat leniently, and hence only throw an error when an actual requirement is made, rather than defined.
+		 * */
+		strictRequirment:true,
+		/***
+		 * A string or array of strings with regex matches which will be treated as exceptions for the strictRequirment mode.
+		 * This means that if these values are matched with a required resource, then they will be treated in the opposite to the specified mode.
+		 * So if strictRequirment is set to true, the matched modules will be treated leniently and vi
+		 */
+		requirementExceptions:null
 	};
 
 	/***
@@ -339,23 +351,32 @@
 			//not yet instanciated
 			if (!this.modules.instances.hasOwnProperty(currModule)) {
 				if (!this.modules.definitions.hasOwnProperty(currModule) && !this.fn.hasOwnProperty(currModule)) {
-					// not defined!
-					msg = 'Modularizer.load: No resource defined for the module ' + currModule;
-					this.log(msg);
-					throw new Error(msg);
-				}
-
-				var def = this.modules.definitions[currModule];
-				if (def instanceof ResourceDefinition) {
-					// this module is still a resource, which means it hasn't had a definition call yet
-					// so we need to fetch it
-					modulesToWaitFor.push(currModule);
-					if (!def.loading() && !contains(resourcesToLoad, def)) {
-						resourcesToLoad.push(def);
+					var shouldThrowError = this.config.strictRequirment;
+					// if this is an exception - switch the decision
+					shouldThrowError = (isStringMatched(currModule,this.config.requirementExceptions)? !shouldThrowError : shouldThrowError);
+					if(shouldThrowError){
+						// not defined!
+						msg = 'Modularizer.load: No resource defined for the module ' + currModule;
+						this.log(msg);
+						throw new Error(msg);
 					}
-				} else if (def instanceof ModuleDefinition && !def.ready()) {
-					// we know this module but it isn't ready for usage yet (its waiting for another resource to load) so wait for it
+
+					// we don't know this module but we have been told to be lenient, so we'll tell our component to wait for this module
+					// and hopefully someone, somewhere, will define it - timeouts will also ignore this module
 					modulesToWaitFor.push(currModule);
+				} else {
+					var def = this.modules.definitions[currModule];
+					if (def instanceof ResourceDefinition) {
+						// this module is still a resource, which means it hasn't had a definition call yet
+						// so we need to fetch it
+						modulesToWaitFor.push(currModule);
+						if (!def.loading() && !contains(resourcesToLoad, def)) {
+							resourcesToLoad.push(def);
+						}
+					} else if (def instanceof ModuleDefinition && !def.ready()) {
+						// we know this module but it isn't ready for usage yet (its waiting for another resource to load) so wait for it
+						modulesToWaitFor.push(currModule);
+					}
 				}
 			}
 		}
@@ -797,9 +818,16 @@
 					// we will now check to see if it is waiting for the 'ready' event which means the other one hasn't completed
 					// its initialization process yet, which mean we are not in a valid state for this call as this call is ,eamt
 					// to test the timeout period
-					var componentEvents = modularizerPackage.events[eventComponentName];
-					if(componentEvents.hasOwnProperty('ready') && componentEvents.ready instanceof Array && componentEvents.ready.length) {
-						// this means there are callbacks waiting for the ready event on this component
+					var componentEvents = modularizerPackage.events[eventComponentName],
+						hasAReadyEvent = componentEvents.hasOwnProperty('ready') && componentEvents.ready instanceof Array && componentEvents.ready.length;
+					// this means there are callbacks waiting for the ready event on this component
+					if( hasAReadyEvent &&
+						(!modularizerPackage.config.strictRequirment ||
+						(modularizerPackage.config.strictRequirment && !isStringMatched(eventComponentName,modularizerPackage.config.requirementExceptions)))) {
+						// if we are in strict mode but this specific module has been specified as being treated as a lenient requirment
+						// then we ignore it.
+						// If, on the other hand, we are in lenient mode in general, then we want the timeout configuration to take
+						// precedance over leniency, so we ignore this situation
 						inValididty = inValididty || [];
 						inValididty.push(eventComponentName);
 					}
@@ -1151,6 +1179,29 @@
 		queue = queue.slice(0);
 		queue.push(module);
 		return queue;
+	};
+
+	var cachedMatching = {},
+		isStringMatched = function(nameToMatch,matchingOptions){
+			if(typeof matchingOptions === 'string') {
+				matchingOptions = [matchingOptions];
+			}
+			if(matchingOptions instanceof Array) {
+				var pattern;
+				for(var index = 0; index < matchingOptions.length;index++) {
+					pattern = matchingOptions[index];
+					if(typeof pattern !== 'string') {
+						return false;
+					}
+					if(!cachedMatching.hasOwnProperty(matchingOptions[index])) {
+						cachedMatching[matchingOptions[index]] = new RegExp(matchingOptions[index]);
+					}
+					if(cachedMatching[matchingOptions[index]].test(nameToMatch)) {
+						return true;
+					}
+				}
+			}
+			return false;
 	};
 
 })(this);
