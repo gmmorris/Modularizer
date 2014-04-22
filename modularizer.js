@@ -174,7 +174,7 @@
 					}
 				}
 			}  else {
-				throw new Error('A defining callback must be provided.');
+				throw new Error('A defining callback must be provided, yet one is missing for module:' + module);
 			}
 
 			//return this for chaining capabilities
@@ -707,7 +707,7 @@
 				this.trigger(module + ":ready");
 			}
 		} else {
-			throw new Error('A defining callback must be provided.');
+			throw new Error('A defining callback must be provided, yet one is missing for module:' + module);
 		}
 	};
 
