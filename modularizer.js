@@ -173,6 +173,8 @@
 						this.prereq.push(prerequisites[resourceIndex]);
 					}
 				}
+			}  else {
+				throw new Error('A defining callback must be provided.');
 			}
 
 			//return this for chaining capabilities
@@ -704,6 +706,8 @@
 				moduleDefinition.ready(true);
 				this.trigger(module + ":ready");
 			}
+		} else {
+			throw new Error('A defining callback must be provided.');
 		}
 	};
 
