@@ -138,6 +138,8 @@
 			if (typeof prerequisites === "function") {
 				defineBy = prerequisites;
 				prerequisites = [];
+			} else if(prerequisites instanceof Array && defineBy === undefined) {
+				throw new Error('A defining callback must be provided, yet one is missing for module:' + module);
 			}
 
 			if (typeof defineBy === 'function' && prerequisites instanceof Array) {
@@ -173,8 +175,6 @@
 						this.prereq.push(prerequisites[resourceIndex]);
 					}
 				}
-			}  else {
-				throw new Error('A defining callback must be provided, yet one is missing for module:' + module);
 			}
 
 			//return this for chaining capabilities
