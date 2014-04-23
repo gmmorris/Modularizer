@@ -152,12 +152,12 @@
 				// very often a resource will contain two modules which have a dependancy between them - lets make
 				// sure none of the depenadencies specifoed for this module are already defined in this resource
 				if (prerequisites.length) {
-					prerequisites = filter(prerequisites, function (prereqModule) {
-						return modules.indexOf(prereqModule) === -1;
+					prerequisites = _.filter(prerequisites, function (prereqModule) {
+						return _.indexOf(modules,prereqModule) === -1;
 					});
 				}
 				if (this.prereq && this.prereq.length) {
-					this.prereq = filter(prerequisites, function (prereqModule) {
+					this.prereq = _.filter(prerequisites, function (prereqModule) {
 						return (prereqModule !== module);
 					});
 				}
@@ -372,7 +372,7 @@
 						// this module is still a resource, which means it hasn't had a definition call yet
 						// so we need to fetch it
 						modulesToWaitFor.push(currModule);
-						if (!def.loading() && !contains(resourcesToLoad, def)) {
+						if (!def.loading() && !_.contains(resourcesToLoad, def)) {
 							resourcesToLoad.push(def);
 						}
 					} else if (def instanceof ModuleDefinition && !def.ready()) {
@@ -450,7 +450,7 @@
 			}
 		});
 
-		if (callqueue && contains(callqueue, module)) {
+		if (callqueue && _.contains(callqueue, module)) {
 			callqueue.push(module);
 			var errorMessage = 'Modularizer.fetchResource: A circular dependancy has been detected. The module "' + module + '" is required by one of it\'s dependencies as seen in the following dependancy tree:' + callqueue.join("->");
 			this.log({
@@ -750,7 +750,7 @@
 				}
 			});
 		}
-		event = event.trim().split(":");
+		event = _.trim(event).split(":");
 		if (event.length) {
 			if (event.length === 1) {
 				// if no specific event has type has been specified but just the namespace, then
@@ -778,7 +778,7 @@
 				}
 			});
 		}
-		event = event.trim().split(":");
+		event = _.trim(event).split(":");
 		if (event.length) {
 
 			var moduleName = event[0];
@@ -869,7 +869,7 @@
 
 		for(moduleIndex = 0; moduleIndex  < moduleCount; moduleIndex++) {
 			eventComponentName = listOfInvalidModules[moduleIndex];
-			if(contains(depQueue,eventComponentName)) {
+			if(_.contains(depQueue,eventComponentName)) {
 				// we have already investigated this component... this means we're in a circular reference
 				listOfInvalidModules[moduleIndex] = {
 					type:ModuleDefinition,
@@ -931,7 +931,7 @@
 			//remove duplicates, as often a single point of failure brings down multiple components
 			listOfInvalidModules = (function(list){
 				var keys = {r:{},m:{}};
-				return filter(list,function(item){
+				return _.filter(list,function(item){
 					if(typeof item === 'string') {
 						if(!keys.m.hasOwnProperty(item)) {
 							keys.m[item] = true;
@@ -1102,82 +1102,6 @@
 		return this;
 	};
 
-	var indexOf = function (haystack, needle) {
-		if (arguments.length == 1) {
-			if (this instanceof Array) {
-				needle = haystack;
-				haystack = this;
-			}
-		}
-
-		if (typeof Array.prototype.indexOf === 'function') {
-			indexOf = Array.prototype.indexOf;
-		} else {
-			/**
-			 * Older IEs don't have indexOf on Arrays
-			 * */
-			indexOf = function (needle) {
-				var index = -1;
-
-				for (var currItemIndex = 0; currItemIndex < this.length; currItemIndex++) {
-					if (this[currItemIndex] === needle) {
-						index = currItemIndex;
-						break;
-					}
-				}
-
-				return index;
-			};
-		}
-
-		return indexOf.call(haystack, needle);
-	};
-
-	var contains = function (haystack, needle) {
-		return (indexOf.call(haystack, needle) >= 0);
-	};
-
-	var filter = (function () {
-		if (Array.prototype.filter) {
-			return function (arr, func) {
-				return arr.filter(func);
-			};
-		} else {
-			var filter = function (fun /*, thisArg */) {
-				"use strict";
-
-				if (this === void 0 || this === null)
-					throw new TypeError();
-
-				var t = Object(this);
-				var len = t.length >>> 0;
-				if (typeof fun != "function")
-					throw new TypeError();
-
-				var res = [];
-				var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
-				for (var i = 0; i < len; i++) {
-					if (i in t) {
-						var val = t[i];
-
-						// NOTE: Technically this should Object.defineProperty at
-						//       the next index, as push can be affected by
-						//       properties on Object.prototype and Array.prototype.
-						//       But that method's new, and collisions should be
-						//       rare, so use the more-compatible alternative.
-						if (fun.call(thisArg, val, i, t))
-							res.push(val);
-					}
-				}
-
-				return res;
-			};
-			return function (arr, func) {
-				return filter.call(arr, func);
-			};
-		}
-	})();
-
 	// clone an array and push an element into the new clone
 	var cloneAndPush = function(queue,module){
 		queue = queue.slice(0);
@@ -1206,6 +1130,87 @@
 				}
 			}
 			return false;
+	};
+
+	var _ = {
+		trim : function(str){
+			if(typeof str === 'string') {
+				if(typeof str.trim === 'function') {
+					// use native
+					return str.trim();
+				} else {
+					return str.replace(/^\s+|\s+$/g, '');
+				}
+			}
+			return str;
+		},
+		indexOf : function (haystack, needle) {
+			var indexOf;
+			if (typeof Array.prototype.indexOf === 'function') {
+				indexOf = Array.prototype.indexOf;
+			} else {
+				/**
+				 * Older IEs don't have indexOf on Arrays
+				 * */
+				indexOf = function (needle) {
+					var index = -1;
+
+					for (var currItemIndex = 0; currItemIndex < this.length; currItemIndex++) {
+						if (this[currItemIndex] === needle) {
+							index = currItemIndex;
+							break;
+						}
+					}
+
+					return index;
+				};
+			}
+
+			return indexOf.call(haystack, needle);
+		},
+		filter : (function () {
+			if (Array.prototype.filter) {
+				return function (arr, func) {
+					return arr.filter(func);
+				};
+			} else {
+				var filter = function (fun /*, thisArg */) {
+					"use strict";
+
+					if (this === void 0 || this === null)
+						throw new TypeError();
+
+					var t = Object(this);
+					var len = t.length >>> 0;
+					if (typeof fun != "function")
+						throw new TypeError();
+
+					var res = [];
+					var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
+					for (var i = 0; i < len; i++) {
+						if (i in t) {
+							var val = t[i];
+
+							// NOTE: Technically this should Object.defineProperty at
+							//       the next index, as push can be affected by
+							//       properties on Object.prototype and Array.prototype.
+							//       But that method's new, and collisions should be
+							//       rare, so use the more-compatible alternative.
+							if (fun.call(thisArg, val, i, t))
+								res.push(val);
+						}
+					}
+
+					return res;
+				};
+				return function (arr, func) {
+					return filter.call(arr, func);
+				};
+			}
+		})(),
+		contains : function (haystack, needle) {
+			return (this.indexOf(haystack, needle) >= 0);
+		}
 	};
 
 })(this);
