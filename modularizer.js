@@ -139,7 +139,7 @@
 				defineBy = prerequisites;
 				prerequisites = [];
 			} else if(prerequisites instanceof Array && defineBy === undefined) {
-				throw new Error('A defining callback must be provided, yet one is missing for module:' + module);
+				throw new ModularizerError('A defining callback must be provided, yet one is missing for module:' + module,Modularizer.ErrorType.InvalidDefinition);
 			}
 
 			if (typeof defineBy === 'function' && prerequisites instanceof Array) {
@@ -170,7 +170,7 @@
 					for (var resourceIndex = 0; resourceIndex < prerequisites.length; resourceIndex++) {
 						res = pckg.getResourceByModule(prerequisites[resourceIndex]);
 						if (!res) {
-							throw new Error("Modularizer.Resource.defines: A prerequisite has been specified for a module which is unknown to Modularizer");
+							throw new ModularizerError("Modularizer.Resource.defines: A prerequisite has been specified for a module which is unknown to Modularizer",Modularizer.ErrorType.InvalidDefinition);
 						}
 						this.prereq.push(prerequisites[resourceIndex]);
 					}
@@ -341,7 +341,7 @@
 		} else if (!(modules instanceof Array)) {
 			msg = "Modularizer.load: Invalid resources specified for the load function";
 			this.log(msg);
-			throw new Error(msg);
+			throw new ModularizerError(msg,Modularizer.ErrorType.InvalidState);
 		}
 
 
@@ -360,7 +360,7 @@
 						// not defined!
 						msg = 'Modularizer.load: No resource defined for the module ' + currModule;
 						this.log(msg);
-						throw new Error(msg);
+						throw new ModularizerError(msg,Modularizer.ErrorType.InvalidState);
 					}
 
 					// we don't know this module but we have been told to be lenient, so we'll tell our component to wait for this module
@@ -460,7 +460,7 @@
 					module: module
 				}
 			});
-			throw new Error(errorMessage);
+			throw new ModularizerError(errorMessage,Modularizer.ErrorType.CircularDependency);
 		} else {
 			callqueue = callqueue || [];
 			callqueue.push(module);
@@ -598,10 +598,10 @@
 	 */
 	Modularizer.prototype.require = function (dependancies, callback, context, synchronous) {
 		if (!(dependancies instanceof Array)) {
-			if (typeof dependancies == 'string') {
+			if (typeof dependancies === 'string') {
 				dependancies = [dependancies];
 			} else {
-				throw new Error('Modularizer.require: A non array argument has been specified as the list of dependancies.');
+				throw new ModularizerError('Modularizer.require: A non array argument has been specified as the list of dependancies.',Modularizer.ErrorType.InvalidArgument);
 			}
 		}
 		if (typeof callback !== "function") {
@@ -625,7 +625,7 @@
 			dependancies = [dependancies];
 		} else if (!dependancies || !(dependancies.length)) {
 			// invalid module sent to be required, simply call the callback
-			throw new Error('Modularizer.require: An invalid dependancy has been specified for requirment, must be either a module name (string) or an array of module names.');
+			throw new ModularizerError('Modularizer.require: An invalid dependancy has been specified for requirment, must be either a module name (string) or an array of module names.',Modularizer.ErrorType.InvalidArgument);
 		}
 
 		// This function fetched the actual resoucres and calls the callback.
@@ -646,7 +646,7 @@
 
 			if (synchronous) {
 				// If the request was demanded as synchronous
-				throw new Error('A dependancy has been requested synchronously but has not yet been loaded.');
+				throw new ModularizerError('A dependancy has been requested synchronously but has not yet been loaded.',Modularizer.ErrorType.InvalidState);
 			}
 
 			this.load(dependancies, deliverPayload, this);
@@ -707,7 +707,7 @@
 				this.trigger(module + ":ready");
 			}
 		} else {
-			throw new Error('A defining callback must be provided, yet one is missing for module:' + module);
+			throw new ModularizerError('A defining callback must be provided, yet one is missing for module:' + module,Modularizer.ErrorType.InvalidDefinition);
 		}
 	};
 
@@ -730,6 +730,21 @@
 		this.dependancies = dependancies;
 		return this;
 	};
+
+	Modularizer.prototype.ErrorType = {
+		Timeout : 0,
+		InvalidDefinition : 1,
+		InvalidState: 2,
+		CircularDependency: 3,
+		InvalidArgument: 4
+	};
+	var ModularizerError = Modularizer.prototype.Error = function (message,type) {
+		this.name = "Modularizer.Error";
+		this.type = type;
+		this.message = message;
+		return this;
+	};
+	ModularizerError.prototype = Error.prototype;
 
 	/**
 	 *  INTERNAL EVENT MANGEMENT
@@ -1052,7 +1067,7 @@
 			this.checkTimeout = setTimeout(function(){
 				var invalidState = checkModularizerValidity(modularizerPackage);
 				if(invalidState !== true && typeof invalidState === 'object') {
-					throw new Error("Modularizer.timer: A timeout has occurred. " + invalidState.toString());
+					throw new ModularizerError("Modularizer.timer: A timeout has occurred. " + invalidState.toString(),Modularizer.ErrorType.Timeout);
 				}
 			},this.timeout);
 		};
