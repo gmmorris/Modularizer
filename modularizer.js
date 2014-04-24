@@ -743,9 +743,8 @@
 		this.name = "Modularizer.Error";
 		this.type = type;
 		this.message = message;
-		return this;
 	};
-	ModularizerError.prototype = Error.prototype;
+	Modularizer.prototype.Error.prototype = new Error();
 
 	/**
 	 *  INTERNAL EVENT MANGEMENT
