@@ -75,6 +75,8 @@
 	Modularizer.config = {
 		/* should use console log messages */
 		debug: false,
+		/* should timeouts be narrowed down */
+		narrowDownTimeouts: false,
 		/* no cachbuster by default */
 		cb: false,
 		/* no loader function is provided by default, but we do ry and detect jQuery by default */
@@ -857,8 +859,8 @@
 		if(inValididty) {
 			// In *normal timeout mode*, this is enough for us to know that the modularizer is invalid, so we'll
 			// add this name to the list and move on
-			if(modularizerPackage.config.debug) {
-				// In *debug timeout mode* we want more information as to why the component isn't ready, so we'll go digging to
+			if(modularizerPackage.config.narrowDownTimeouts) {
+				// we want more information as to why the component isn't ready, so we'll go digging to
 				// identify circular references etc.
 				// lets take a look at the context of the callback and perhaps we can infur from that who is waiting for this module and why
 				inValididty = narrowDownInvalidModuleNames(modularizerPackage,inValididty);
