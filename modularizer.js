@@ -833,7 +833,7 @@
 	};
 
 	Modularizer.prototype.validity = function (event) {
-		return checkModularizerValidity(this);
+		return checkModularizerValidity(this,true);
 	};
 
 	/***
@@ -841,7 +841,7 @@
 	 * initialized but isn't actually performing any file fetching or object initialization OR that it has been waiting for them
 	 * too long.
 	 */
-	function checkModularizerValidity(modularizerPackage){
+	function checkModularizerValidity(modularizerPackage,debug){
 		var inValididty = false;
 		if(modularizerPackage.events) {
 			for(var eventComponentName in modularizerPackage.events) {
@@ -877,7 +877,7 @@
 				// lets take a look at the context of the callback and perhaps we can infur from that who is waiting for this module and why
 				inValididty = narrowDownInvalidModuleNames(modularizerPackage,inValididty);
 			}
-			return new InvalidState(inValididty);
+			return new InvalidState(inValididty,debug);
 		}
 		//valid
 		return true;
@@ -1106,7 +1106,7 @@
 		return this;
 	};
 
-	var InvalidState = function(invalidModules){
+	var InvalidState = function(invalidModules,debug){
 		invalidModules = invalidModules || [];
 
 		this.toString = function(){
@@ -1127,6 +1127,10 @@
 			}
 			return 'The Modularizer has timed out, but no specific modules could be narrowed down to the source of the problem.';
 		};
+
+		if(debug) {
+			this.invalidModules = invalidModules;
+		}
 
 		return this;
 	};
