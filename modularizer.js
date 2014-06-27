@@ -276,8 +276,8 @@
 		return false;
 	};
 
-	Modularizer.prototype.log = function (dbg,ignoreDebug) {
-		if (this.config.debug || ignoreDebug) {
+	Modularizer.prototype.log = function (dbg) {
+		if (this.config.debug) {
 			try { //for ie8
 				console.log(dbg);
 			} catch (e) {
@@ -496,13 +496,20 @@
 				try {
 					this.modules.instances[module] = definition.callback.apply(this, definition.dependancies);
 				} catch (o_O) {
+					var message = 'Modularizer.fetchResource: The definition callback for the following module threw an exception.';
 					this.log({
-						evt: 'Modularizer.fetchResource: The definition callback for the following module threw an exception.',
+						evt: message,
 						params: {
 							ex: o_O,
 							module: module
 						}
 					},true);
+					// throw window level error which will not stop Modularizer execution but will show up in console as a problem in
+					// the modularizer
+					setTimeout(function(){
+						throw new ModularizerError(message ,ModularizerErrorType.InstanciationFailure);
+					},50);
+					// rethrow original error
 					throw o_O;
 				}
 			}
@@ -738,7 +745,8 @@
 		InvalidDefinition : 1,
 		InvalidState: 2,
 		CircularDependency: 3,
-		InvalidArgument: 4
+		InvalidArgument: 4,
+		InstanciationFailure: 5
 	};
 
 	var ModularizerError = Modularizer.prototype.Error = function (message,type) {
