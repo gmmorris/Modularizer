@@ -832,6 +832,10 @@
 		}
 	};
 
+	Modularizer.prototype.validity = function (event) {
+		return checkModularizerValidity(this);
+	};
+
 	/***
 	 * Check that the current state of the modularizer is valid in the sense that it isn't waiting on something to be
 	 * initialized but isn't actually performing any file fetching or object initialization OR that it has been waiting for them
