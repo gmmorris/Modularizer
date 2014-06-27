@@ -446,7 +446,7 @@
 	 */
 	Modularizer.prototype.fetchResource = function (module, callqueue) {
 		this.log({
-			evt: 'Modularizer.fetchResource: begin.',
+			evt: 'Modularizer.fetchResource(' + module+ '): begin.',
 			params: {
 				module: module
 			}
@@ -454,7 +454,7 @@
 
 		if (callqueue && _.contains(callqueue, module)) {
 			callqueue.push(module);
-			var errorMessage = 'Modularizer.fetchResource: A circular dependancy has been detected. The module "' + module + '" is required by one of it\'s dependencies as seen in the following dependancy tree:' + callqueue.join("->");
+			var errorMessage = 'Modularizer.fetchResource(' + module+ '): A circular dependancy has been detected. The module "' + module + '" is required by one of it\'s dependencies as seen in the following dependancy tree:' + callqueue.join("->");
 			this.log({
 				evt: errorMessage,
 				type: 'error',
@@ -473,7 +473,7 @@
 		// So we request the module's dependnecies' instances and pass them as parameters to the module's callback.
 		// The callback is expected to return an instance of the module to be stored for future retrieval
 		if (this.modules.definitions.hasOwnProperty(module)) {
-			this.log('Modularizer.fetchResource: retrieve and call module definition.');
+			this.log('Modularizer.fetchResource(' + module+ '): retrieve and call module definition.');
 
 			// retireve definition
 			var definition = this.modules.definitions[module];
@@ -496,7 +496,7 @@
 				try {
 					this.modules.instances[module] = definition.callback.apply(this, definition.dependancies);
 				} catch (o_O) {
-					var message = 'Modularizer.fetchResource: The definition callback for the following module threw an exception.';
+					var message = 'Modularizer.fetchResource(' + module+ '): The definition callback for the following module threw an exception.';
 					this.log({
 						evt: message,
 						params: {
@@ -514,21 +514,21 @@
 				}
 			}
 
-			this.log('Modularizer.fetchResource: delete module definition.');
+			this.log('Modularizer.fetchResource(' + module+ '): delete module definition.');
 			// remove from definitions object, otherwise we risk reinstanciating the module
 			delete this.modules.definitions[module];
 		}
 
 		// Check to see if the module exists in the loaded modules list
 		if (this.modules.instances.hasOwnProperty(module)) {
-			this.log('Modularizer.fetchResource: retreive loaded module.');
+			this.log('Modularizer.fetchResource(' + module+ '): retreive loaded module.');
 			// return the instance from the list
 			return this.modules.instances[module];
 		} else if (this.fn.hasOwnProperty(module)) {
 			// return the cutom fn instance
 			return this.fn[module].call(this);
 		} else {
-			this.log('Modularizer.fetchResource: the module requested hasn\'t been loaded.');
+			this.log('Modularizer.fetchResource(' + module+ '): the module requested hasn\'t been loaded.');
 			// Return undefined... presumably no instance was requested, or it is a mistake.
 			// If, in fact, this is a mistake and the module was expected, it is worth examaning both the config file and the actual module file
 			// as BOTH include keys for refering to the module (one for registrarion and the other for definition) and they may, accidentaly, be different
@@ -620,7 +620,7 @@
 		}
 
 		this.log({
-			evt: 'Modularizer.require: Require dependancies.',
+			evt: 'Modularizer.require(' + dependancies.join(',')+ '): Require dependancies.',
 			params: {
 				dependancies: dependancies
 			}
