@@ -276,8 +276,8 @@
 		return false;
 	};
 
-	Modularizer.prototype.log = function (dbg) {
-		if (this.config.debug) {
+	Modularizer.prototype.log = function (dbg,ignoreDebug) {
+		if (this.config.debug || ignoreDebug) {
 			try { //for ie8
 				console.log(dbg);
 			} catch (e) {
@@ -502,7 +502,7 @@
 							ex: o_O,
 							module: module
 						}
-					});
+					},true);
 					throw o_O;
 				}
 			}
