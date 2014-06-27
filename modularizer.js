@@ -845,7 +845,7 @@
 		var inValididty = false;
 		if(modularizerPackage.events) {
 			for(var eventComponentName in modularizerPackage.events) {
-				if(modularizerPackage.events.hasOwnProperty(eventComponentName)) {
+				if(modularizerPackage.events.hasOwnProperty(eventComponentName) && !(isStringMatched(eventComponentName,this.config.requirementExceptions))) {
 					// we have events which are still being listened for
 					// this ,means we have at least one component which is waiting for another component.
 					// we will now check to see if it is waiting for the 'ready' event which means the other one hasn't completed
