@@ -96,7 +96,14 @@
 		 * This means that if these values are matched with a required resource, then they will be treated in the opposite to the specified mode.
 		 * So if strictRequirment is set to true, the matched modules will be treated leniently and vi
 		 */
-		requirementExceptions:null
+		requirementExceptions:null,
+		/***
+		 * A string or array of strings with regex matches which will be treated as additional exceptions for the strictRequirment mode.
+		 * This pattern is different than the requirementExceptions only in one aspect - that it applies to the timeout in addition to the requirment.
+		 * This means that, unlike the requirementExceptions patterns, these modules will be ignored in the timeout as well as having lenient requirment,
+		 * so when the timeout occurs, their absence will not cause the package to be deemed invalid.
+		 */
+		optionalRequirment:null
 	};
 
 	/***
@@ -357,7 +364,7 @@
 				if (!this.modules.definitions.hasOwnProperty(currModule) && !this.fn.hasOwnProperty(currModule)) {
 					var shouldThrowError = this.config.strictRequirment;
 					// if this is an exception - switch the decision
-					shouldThrowError = (isStringMatched(currModule,this.config.requirementExceptions)? !shouldThrowError : shouldThrowError);
+					shouldThrowError = ((isStringMatched(currModule,this.config.requirementExceptions) || isStringMatched(currModule,this.config.optionalRequirment))? !shouldThrowError : shouldThrowError);
 					if(shouldThrowError){
 						// not defined!
 						msg = 'Modularizer.load: No resource defined for the module ' + currModule;
@@ -845,7 +852,7 @@
 		var inValididty = false;
 		if(modularizerPackage.events) {
 			for(var eventComponentName in modularizerPackage.events) {
-				if(modularizerPackage.events.hasOwnProperty(eventComponentName) && !(isStringMatched(eventComponentName,modularizerPackage.config.requirementExceptions))) {
+				if(modularizerPackage.events.hasOwnProperty(eventComponentName) && !(isStringMatched(eventComponentName,modularizerPackage.config.optionalRequirment))) {
 					// we have events which are still being listened for
 					// this ,means we have at least one component which is waiting for another component.
 					// we will now check to see if it is waiting for the 'ready' event which means the other one hasn't completed
