@@ -911,7 +911,7 @@
 				listOfInvalidModules[moduleIndex] = {
 					type:ModuleDefinition,
 					name:eventComponentName,
-					problem:'has a circular reference with ' + depQueue.pop()
+					problem:'<-Circular Ref-> ' + depQueue.pop()
 				};
 			} else if(moduleDefs.hasOwnProperty(eventComponentName)) {
 				if(moduleDefs[eventComponentName] instanceof ModuleDefinition) {
