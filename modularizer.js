@@ -898,6 +898,7 @@
 	function narrowDownInvalidModuleNames(modularizerPackage, listOfInvalidModules, depQueue){
 		var eventComponentName, narrowedDownList,
 			moduleDefs = modularizerPackage.modules.definitions,
+			moduleInst = modularizerPackage.modules.instances,
 			moduleIndex, moduleCount = listOfInvalidModules.length;
 
 		// keep track of the dep queue - we need this to identify a circular reference
@@ -924,7 +925,7 @@
 							cloneAndPush(depQueue,eventComponentName));
 
 						if(narrowedDownList.length) {
-							// this module is waiting for other - add the mto the list
+							// this module is waiting for other - add them to the list
 
 							// skip to the next module (jumping over those we just evaluated
 							moduleCount += narrowedDownList.length - 1;
@@ -932,6 +933,10 @@
 
 							// convert the list of modules to an argument list for "splice" by adding the index of the current module (that we're removing) as
 							// first arg then "1" as second as we wish to remove that module form the list and then adding the narrowedDownList of modules
+							// I know, this is a bit of a mind fuck.
+							// What we have done is turn the array of modules into the arguments for the next 'splice' call, and add the index we wish to
+							// insert into, the number of modules to remove (1 element - the current one) from the original, and then it will get reinserted
+							// along with the chain of it's dependencies
 							narrowedDownList.splice(0,0,moduleIndex,1);
 							listOfInvalidModules.splice.apply(listOfInvalidModules,narrowedDownList);
 						} else {
@@ -942,6 +947,10 @@
 								problem:'never reported completion, perhaps an internal error in it caused it to fail'
 							};
 						}
+					} else {
+						listOfInvalidModules.splice(moduleIndex,1);
+						moduleIndex--;
+						moduleCount--;
 					}
 				} else if(moduleDefs[eventComponentName] instanceof ResourceDefinition) {
 					if(moduleDefs[eventComponentName].loaded()) {
@@ -960,6 +969,11 @@
 						};
 					}
 				}
+			} else if(moduleInst.hasOwnProperty(eventComponentName)) {
+				// this modules is already instanciated, this means its ready - ignore it
+				listOfInvalidModules.splice(moduleIndex,1);
+				moduleIndex--;
+				moduleCount--;
 			}
 		}
 
@@ -1088,7 +1102,7 @@
 			this.checkTimeout = setTimeout(function(){
 				var invalidState = checkModularizerValidity(modularizerPackage);
 				if(invalidState !== true && typeof invalidState === 'object') {
-					throw new ModularizerError("Modularizer.timer: A timeout has occurred. " + invalidState.toString(),ModularizerErrorType.Timeout);
+					throw new ModularizerError("Modularizer.timer: Timeout:" + invalidState.toString(),ModularizerErrorType.Timeout);
 				}
 			},this.timeout);
 		};
@@ -1124,15 +1138,15 @@
 						messages.push(invalidModules[index]);
 					} else if(typeof invalidModules[index] === 'object') {
 						if(invalidModules[index].type === ResourceDefinition) {
-							messages.push("The resource at path '" + invalidModules[index].path + "' " + invalidModules[index].problem);
+							messages.push("Resource '" + invalidModules[index].path + "' " + invalidModules[index].problem);
 						} else if(invalidModules[index].type === ModuleDefinition) {
-							messages.push("The module named '" + invalidModules[index].name + "' " + invalidModules[index].problem);
+							messages.push("Module '" + invalidModules[index].name + "' " + invalidModules[index].problem);
 						}
 					}
 				}
-				return "The following components are have not been initialized on time:" + messages.join(', ');
+				return "Failed components:" + messages.join(', ');
 			}
-			return 'The Modularizer has timed out, but no specific modules could be narrowed down to the source of the problem.';
+			return 'No specific modules could be narrowed down to the source of the problem.';
 		};
 
 		if(debug) {
