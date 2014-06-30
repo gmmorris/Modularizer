@@ -756,10 +756,11 @@
 		InstanciationFailure: 5
 	};
 
-	var ModularizerError = Modularizer.prototype.Error = function (message,type) {
+	var ModularizerError = Modularizer.prototype.Error = function (message,type,data) {
 		this.name = "Modularizer.Error";
 		this.type = type;
 		this.message = message;
+		this.data = data;
 	};
 	Modularizer.prototype.Error.prototype = new Error();
 
@@ -1102,7 +1103,9 @@
 			this.checkTimeout = setTimeout(function(){
 				var invalidState = checkModularizerValidity(modularizerPackage);
 				if(invalidState !== true && typeof invalidState === 'object') {
-					throw new ModularizerError("Modularizer.timer: Timeout:" + invalidState.toString(),ModularizerErrorType.Timeout);
+					throw new ModularizerError("Modularizer.timer: Timeout:" + invalidState.toString(),ModularizerErrorType.Timeout,{
+						m : invalidState.invalidModules
+					});
 				}
 			},this.timeout);
 		};
@@ -1149,9 +1152,7 @@
 			return 'No specific modules could be narrowed down to the source of the problem.';
 		};
 
-		if(debug) {
-			this.invalidModules = invalidModules;
-		}
+		this.invalidModules = invalidModules;
 
 		return this;
 	};
