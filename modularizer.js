@@ -852,7 +852,7 @@
 		var inValididty = false;
 		if(modularizerPackage.events) {
 			for(var eventComponentName in modularizerPackage.events) {
-				if(modularizerPackage.events.hasOwnProperty(eventComponentName) && !(isStringMatched(eventComponentName,modularizerPackage.config.optionalRequirment))) {
+				if(modularizerPackage.events.hasOwnProperty(eventComponentName)) {
 					// we have events which are still being listened for
 					// this ,means we have at least one component which is waiting for another component.
 					// we will now check to see if it is waiting for the 'ready' event which means the other one hasn't completed
@@ -863,7 +863,7 @@
 					// this means there are callbacks waiting for the ready event on this component
 					if( hasAReadyEvent &&
 						(!modularizerPackage.config.strictRequirment ||
-							(modularizerPackage.config.strictRequirment && !isStringMatched(eventComponentName,modularizerPackage.config.requirementExceptions)))) {
+							(modularizerPackage.config.strictRequirment && !isStringMatched(eventComponentName,modularizerPackage.config.optionalRequirment)))) {
 						// if we are in strict mode but this specific module has been specified as being treated as a lenient requirment
 						// then we ignore it.
 						// If, on the other hand, we are in lenient mode in general, then we want the timeout configuration to take
