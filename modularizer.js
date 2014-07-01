@@ -840,6 +840,10 @@
 		}
 	};
 
+	Modularizer.prototype.hasTimedOut = function () {
+		return (this._hasTimedOut === true);
+	};
+
 	Modularizer.prototype.validity = function (event) {
 		return checkModularizerValidity(this,true);
 	};
@@ -1103,6 +1107,7 @@
 			this.checkTimeout = setTimeout(function(){
 				var invalidState = checkModularizerValidity(modularizerPackage);
 				if(invalidState !== true && typeof invalidState === 'object') {
+					modularizerPackage._hasTimedOut = true;
 					throw new ModularizerError("Modularizer.timer: Timeout:" + invalidState.toString(),ModularizerErrorType.Timeout,{
 						m : invalidState.invalidModules
 					});
