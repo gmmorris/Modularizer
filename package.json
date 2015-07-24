@@ -1,22 +1,32 @@
 {
-    "name": "Modularizer",
-    "description": "A component which encapsulates basic modularization using the AMD API but in a self contained package rather than on the global object",
-    "version": "0.2.0",
-    "author": "Gidi Meir Morris",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/gmmorris/modularizer.git"
-    },
-    "licenses":[
-        {
-            "type":"MIT",
-            "url":"https://github.com/gmmorris/modularizer/blob/master/LICENSE"
-        }
-    ],
-    "dependencies": {
-    },
-    "devDependencies": {
-        "bower": "~1.2.8"
-    },
-    "keywords":["Grunt","Modularizer.js"]
+  "name": "Modularizer",
+  "description": "A component which encapsulates basic modularization using the AMD API but in a self contained package rather than on the global object",
+  "version": "0.2.0",
+  "author": "Gidi Meir Morris",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gmmorris/modularizer.git"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/gmmorris/modularizer/blob/master/LICENSE"
+    }
+  ],
+  "scripts": {
+    "test": "karma start my.conf.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "bower": "~1.2.8",
+    "jasmine-core": "^2.3.4",
+    "karma": "^0.13.3",
+    "karma-jasmine": "^0.3.6",
+    "karma-phantomjs-launcher": "^0.2.0",
+    "phantomjs": "^1.9.17"
+  },
+  "keywords": [
+    "Grunt",
+    "Modularizer.js"
+  ]
 }
