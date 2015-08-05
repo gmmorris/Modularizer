@@ -14,16 +14,23 @@
     }
   ],
   "scripts": {
-    "test": "karma start my.conf.js"
+    "test": "mocha tests/*-test.js"
   },
   "dependencies": {},
   "devDependencies": {
-    "bower": "~1.2.8",
-    "jasmine-core": "^2.3.4",
+    "blanket": "^1.1.6",
+    "coveralls": "^2.11.2",
+    "glob": "^4.3.5",
+    "jsdom": "^3.1.1",
     "karma": "^0.13.3",
-    "karma-jasmine": "^0.3.6",
+    "karma-mocha": "^0.2.0",
     "karma-phantomjs-launcher": "^0.2.0",
+    "mocha": "2.1.0",
+    "mocha-jsdom": "^0.2.1",
+    "mocha-lcov-reporter": "0.0.1",
     "phantomjs": "^1.9.17"
+  },
+  "config": {
   },
   "keywords": [
     "Grunt",
