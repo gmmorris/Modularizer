@@ -11,7 +11,7 @@ describe('Modularizer BaseTag', function() {
     });
   });
 
-  it('should use the data-modularizer atribtue wheb present for the basetag configuration value', function(done) {
+  it('should use the data-modularizer attribtue when present for the basetag configuration value', function(done) {
     var attr = '/static/';
     dom.inject("./modularizer.js",{
       'data-modularizer' : attr
