@@ -20,4 +20,14 @@ describe('Modularizer BaseTag', function() {
       done();
     });
   });
+
+  it('should return the basetag value', function(done) {
+    var attr = '/static/';
+    dom.clear().inject("./modularizer.js",{
+      'data-modularizer' : attr
+    },function(){
+      should(window.Modularizer.prototype.getTagBase()).be.a.String().be.eql(attr);
+      done();
+    });
+  });
 });

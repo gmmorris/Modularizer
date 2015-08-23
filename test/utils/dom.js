@@ -1,7 +1,10 @@
 
 var jsdom = require("jsdom"), mocjsdom = require('mocha-jsdom');
 
-exports.init = function(withConsole){
+
+var modularizerScriptPath = './modularizer.js';
+
+exports.init = function(withScript,withConsole){
   var config = {
     features : {
       FetchExternalResources: ["script","link"],
@@ -9,6 +12,9 @@ exports.init = function(withConsole){
       SkipExternalResources: false
     }
   };
+  if(withScript){
+    config.html = '<!doctype html><html><head><meta charset="utf-8"></head><body><script src="'+modularizerScriptPath+'"></script></body></html>';
+  }
   if(withConsole){
     var virtualConsole = jsdom.createVirtualConsole();
     virtualConsole.on("jsdomError", function (error) {
