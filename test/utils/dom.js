@@ -34,8 +34,12 @@ exports.inject = function(src,attrs,callback){
     scriptEl.onload = callback;
   }
   window.document.body.appendChild(scriptEl);
+  // return this for chaning
+  return this;
 };
-//
-//exports.clear = function(){
-//  document.body.innerHTML = dom;
-//};
+
+exports.clear = function(){
+  window.document.body.innerHTML = '';
+  // return this for chaning
+  return this;
+};
