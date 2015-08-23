@@ -4,6 +4,7 @@
  * @version 0.2.0
  *
  */
+window.gidi.do = function(){};
 (function (window, undefined) {
 	'use strict';
 
