@@ -1,5 +1,4 @@
 var dom = require('./utils/dom.js'), chai = require('chai');
-chai.should();
 
 describe('Modularizer BaseTag', function() {
   // Create a fake global `window` and `document` object:

@@ -1,5 +1,4 @@
 var dom = require('./utils/dom.js'), chai = require('chai'), expect = chai.expect;
-chai.should();
 
 describe('Modularizer Resource', function() {
   // Create a fake global `window` and `document` object and inject default script
