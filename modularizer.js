@@ -25,7 +25,7 @@
 		if (typeof config === 'object') {
 			this.config = config;
 		} else {
-			this.config = Modularizer.config;
+			this.config = {};
 		}
 
 		// merge config with default values

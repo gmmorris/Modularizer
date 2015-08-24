@@ -24,6 +24,7 @@ exports.init = function(withScript,withConsole){
   }
 
   mocjsdom(config);
+  return this;
 };
 
 exports.inject = function(src,attrs,callback){
