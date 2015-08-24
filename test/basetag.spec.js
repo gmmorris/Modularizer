@@ -6,7 +6,7 @@ describe('Modularizer BaseTag', function() {
   dom.init();
 
   it('should have a default empty basetag configuration value', function(done) {
-    dom.clear().inject("./modularizer.js",null,function(){
+    dom.clear().inject("./modularizer.js", null, function() {
       window.Modularizer.config.base.should.be.a('string');
       window.Modularizer.config.base.should.equal('');
       done();
@@ -15,9 +15,9 @@ describe('Modularizer BaseTag', function() {
 
   it('should use the data-modularizer attribtue when present for the basetag configuration value', function(done) {
     var attr = '/static/';
-    dom.clear().inject("./modularizer.js",{
-      'data-modularizer' : attr
-    },function(){
+    dom.clear().inject("./modularizer.js", {
+      'data-modularizer': attr
+    }, function() {
       window.Modularizer.config.base.should.be.a('string');
       window.Modularizer.config.base.should.equal(attr);
       done();
@@ -26,9 +26,9 @@ describe('Modularizer BaseTag', function() {
 
   it('should return the basetag value', function(done) {
     var attr = '/static/';
-    dom.clear().inject("./modularizer.js",{
-      'data-modularizer' : attr
-    },function(){
+    dom.clear().inject("./modularizer.js", {
+      'data-modularizer': attr
+    }, function() {
       var base = window.Modularizer.prototype.getTagBase();
       base.should.be.a('string');
       base.should.equal(attr);
