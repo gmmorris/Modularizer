@@ -35,7 +35,9 @@
 			}
 		}
 
-		if (!this.config.loader) {
+		// if no loader is specified, but a boolean true value is specified we let modularier try
+		// and detect or create a suitable loader
+		if (this.config.loader === true) {
 			if (this.config.detectJQuery && typeof $ === 'function' && typeof $.getScript === 'function') {
 				this.config.loader = $.getScript;
 			} else {
@@ -79,8 +81,8 @@
 		narrowDownTimeouts: false,
 		/* no cachbuster by default */
 		cb: false,
-		/* no loader function is provided by default, but we do ry and detect jQuery by default */
-		loader: false,
+		/* a loader function is provided by default, but we do try and detect jQuery first */
+		loader: true,
 		detectJQuery: true,
 		/* by default give a 3 second timeout */
 		timeout:3000,
@@ -134,11 +136,25 @@
 		this.modules = false;
 		this.prereq = false;
 
-		var definitions = false;
-		// A method for specifying a module definition inside the package
-		// @ module: The name of a module which is known to reside inside the package
-		// @ definedBy: If we wish to specify a definition function which will actually define this module we can do so here
-		this.defines = function (module, prerequisites, defineBy) {
+		this.definitions = false;
+		this.state = RESOURCE_STATE.registered;
+
+		return this;
+	};
+
+	Modularizer.Resource.prototype = {
+		/***
+		 * A method for specifying a module definition inside the package
+		 * @param module The name of a module which is known to reside inside the package
+		 * @param prerequisites An array of prerequisite modules
+		 * @param defineBy If we wish to specify a definition function which will actually define this module we can do so here
+		 * @returns {Modularizer.Resource}
+		 */
+		defines : function (module, prerequisites, defineBy) {
+			if(typeof module !== 'string' || !module.length){
+				throw new ModularizerError('An invalid module name has been specified',ModularizerErrorType.InvalidDefinition);
+			}
+
 			this.package.modules.definitions[module] = this;
 
 			var modules = this.modules = this.modules || [];
@@ -147,13 +163,19 @@
 			if (typeof prerequisites === "function") {
 				defineBy = prerequisites;
 				prerequisites = [];
-			} else if(prerequisites instanceof Array && defineBy === undefined) {
-				throw new ModularizerError('A defining callback must be provided, yet one is missing for module:' + module,ModularizerErrorType.InvalidDefinition);
 			}
 
-			if (typeof defineBy === 'function' && prerequisites instanceof Array) {
-				definitions = definitions || {};
-				definitions[module] = {
+			if(!(prerequisites === undefined || (prerequisites && _.isArray(prerequisites)))){
+				throw new ModularizerError('Invalid prerequisites have been specified for module:' + module,ModularizerErrorType.InvalidDefinition);
+			}
+
+			if(defineBy !== undefined && typeof defineBy !== 'function') {
+				throw new ModularizerError('An invalid defining function has been specified for module:' + module,ModularizerErrorType.InvalidDefinition);
+			}
+
+			if (typeof defineBy === 'function' && prerequisites && _.isArray(prerequisites)) {
+				this.definitions = this.definitions || {};
+				this.definitions[module] = {
 					def: defineBy,
 					req: prerequisites
 				};
@@ -177,7 +199,7 @@
 					this.prereq = this.prereq || [];
 					var res;
 					for (var resourceIndex = 0; resourceIndex < prerequisites.length; resourceIndex++) {
-						res = pckg.getResourceByModule(prerequisites[resourceIndex]);
+						res = this.package.getResourceByModule(prerequisites[resourceIndex]);
 						if (!res) {
 							throw new ModularizerError("Modularizer.Resource.defines: A prerequisite has been specified for a module which is unknown to Modularizer",ModularizerErrorType.InvalidDefinition);
 						}
@@ -188,47 +210,46 @@
 
 			//return this for chaining capabilities
 			return this;
-		};
+		},
 
-		var state = RESOURCE_STATE.registered;
-		this.loading = function (val) {
+		loading : function (val) {
 			// if a value is being set
 			if (val) {
-				state = RESOURCE_STATE.loading;
+				this.state = RESOURCE_STATE.loading;
 			}
-			return (state === RESOURCE_STATE.loading);
-		};
-		this.loaded = function (val) {
+			return (this.state === RESOURCE_STATE.loading);
+		},
+		loaded : function (val) {
 			// if a value is being set
 			if (val) {
-				state = RESOURCE_STATE.loaded;
+				this.state = RESOURCE_STATE.loaded;
 				// now that this resource is loaded - see if it has any definition overrides and if
 				// so execute them and notify that this module is has been loaded
-				if (definitions) {
-					for (var module in definitions) {
-						if (definitions.hasOwnProperty(module)) {
+				if (this.definitions) {
+					for (var module in this.definitions) {
+						if (this.definitions.hasOwnProperty(module)) {
 							// call the definition at package context
-							this.package.define(module, definitions[module].req, definitions[module].def);
+							this.package.define(module, this.definitions[module].req, this.definitions[module].def);
 						}
 					}
 				}
 			}
 			return (state === RESOURCE_STATE.loaded);
-		};
-		this.load = function () {
+		},
+		load : function () {
 			this.loading(true);
 
-			if (this.prereq && !pckg.knows(this.prereq)) {
-				pckg.load(this.prereq, loadResource, {
+			if (this.prereq && !this.package.knows(this.prereq)) {
+				this.package.load(this.prereq, loadResource, {
 					res: this,
-					pckg: pckg
+					pckg: this.package
 				});
 			} else {
-				loadResource(this, pckg);
+				loadResource(this, this.package);
 			}
-		};
+		},
 
-		this.shouldDefine = function (module) {
+		shouldDefine : function (module) {
 			if (!this.modules) {
 				return false;
 			}
@@ -238,9 +259,7 @@
 					return true;
 				}
 			}
-		};
-
-		return this;
+		}
 	};
 
 	/***
@@ -347,7 +366,7 @@
 
 		if (typeof modules === 'string') {
 			modules = [modules];
-		} else if (!(modules instanceof Array)) {
+		} else if (!(modules && _.isArray(modules))) {
 			msg = "Modularizer.load: Invalid resources specified for the load function";
 			this.log(msg);
 			throw new ModularizerError(msg,ModularizerErrorType.InvalidState);
@@ -613,7 +632,7 @@
 	 * </pre></code>
 	 */
 	Modularizer.prototype.require = function (dependancies, callback, context, synchronous) {
-		if (!(dependancies instanceof Array)) {
+		if (!(dependancies && _.isArray(dependancies))) {
 			if (typeof dependancies === 'string') {
 				dependancies = [dependancies];
 			} else {
@@ -864,7 +883,7 @@
 					// its initialization process yet, which mean we are not in a valid state for this call as this call is ,eamt
 					// to test the timeout period
 					var componentEvents = modularizerPackage.events[eventComponentName],
-						hasAReadyEvent = componentEvents.hasOwnProperty('ready') && componentEvents.ready instanceof Array && componentEvents.ready.length;
+						hasAReadyEvent = componentEvents.hasOwnProperty('ready') && componentEvents.ready && _.isArray(componentEvents.ready) && componentEvents.ready.length;
 					// this means there are callbacks waiting for the ready event on this component
 					if( hasAReadyEvent &&
 						(!modularizerPackage.config.strictRequirment ||
@@ -1174,7 +1193,7 @@
 			if(typeof matchingOptions === 'string') {
 				matchingOptions = [matchingOptions];
 			}
-			if(matchingOptions instanceof Array) {
+			if(matchingOptions && _.isArray(matchingOptions)) {
 				var pattern;
 				for(var index = 0; index < matchingOptions.length;index++) {
 					pattern = matchingOptions[index];
@@ -1193,6 +1212,9 @@
 		};
 
 	var _ = {
+		isArray : Array.isArray || function(arr){
+			return toString.call(arr) === '[object Array]';
+		},
 		trim : function(str){
 			if(typeof str === 'string') {
 				if(typeof str.trim === 'function') {
