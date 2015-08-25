@@ -706,6 +706,9 @@
 	 *  </pre></code>
 	 */
 	Modularizer.prototype.define = function (module, dependancies, callback) {
+		if(typeof module !== 'string' || !module.length){
+			throw new ModularizerError('An invalid module name has been specified',ModularizerErrorType.InvalidDefinition);
+		}
 
 		//as the dependancies are optional, check to see if perhaps the callback was sent second and is now inside the 'dependancies' variable
 		if (typeof(dependancies) === 'function') {
