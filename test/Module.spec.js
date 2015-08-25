@@ -68,8 +68,70 @@ describe('Modularizer Module management', function() {
     });
   });
   describe('knows()', function() {
-    it('', function() {
-      assert(false);
+    it('should return false if an invalid module is requested', function() {
+      var myModularizer = new window.Modularizer({
+        loader : false
+      }), moduleDef = function(){};
+
+      assert(myModularizer.knows() === false);
+      assert(myModularizer.knows('') === false);
+      assert(myModularizer.knows({}) === false);
+      assert(myModularizer.knows(false) === false);
+    });
+    it('should return true if the requested module defined in the package', function() {
+      var MODULE_NAME = 'my.module',
+        myModularizer = new window.Modularizer({
+          loader : false
+        });
+
+      myModularizer.define(MODULE_NAME,function(){});
+
+      assert(myModularizer.knows(MODULE_NAME));
+    });
+    it('should return false if multiple modules have been requested and any of them is not defined', function() {
+      var MODULE_NAME = 'my.module',
+      myModularizer = new window.Modularizer({
+        loader : false
+      });
+
+      myModularizer.define(MODULE_NAME,function(){});
+
+      assert(myModularizer.knows([MODULE_NAME,MODULE_NAME + '.unknown']) === false);
+    });
+    it('should return true if the requested modules are all defined in the package', function() {
+      var MODULE_NAME = 'my.module',
+      myModularizer = new window.Modularizer({
+        loader : false
+      });
+
+      myModularizer.define(MODULE_NAME+'1',function(){});
+      myModularizer.define(MODULE_NAME+'2',function(){});
+
+      assert(myModularizer.knows([MODULE_NAME+'1',MODULE_NAME+'2']));
+    });
+    it('should return false if the requested module defined in a resource which has not yet been loaded', function() {
+      var PATH = '/path/to/file.js', MY_MODULE = 'my.module',
+        myModularizer = new window.Modularizer({
+          loader : function(){}
+        });
+
+      var pckg = myModularizer.register(PATH).defines(MY_MODULE);
+
+      assert(myModularizer.knows(MY_MODULE) === false);
+    });
+    it('should return true if the requested module defined in a resource which has been loaded', function() {
+      var PATH = '/path/to/file.js', MY_MODULE = 'my.module',
+      myModularizer = new window.Modularizer({
+        loader : function(){
+          myModularizer.define(MY_MODULE,function(){
+
+          });
+        }
+      });
+
+      var pckg = myModularizer.register(PATH).defines(MY_MODULE);
+      pckg.load();
+      assert(myModularizer.knows(MY_MODULE));
     });
   });
   describe('fetchResource()', function() {
