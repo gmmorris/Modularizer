@@ -268,13 +268,6 @@ describe('Modularizer Module management', function() {
     });
   });
 
-  //describe('fetchResource()', function() {
-  //
-  //  it('', function() {
-  //    assert(false);
-  //  });
-  //});
-
   describe('define()', function() {
 
     it('should throw an error when a module name is omitted', function() {
