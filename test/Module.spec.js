@@ -381,6 +381,35 @@ describe('Modularizer Module management', function() {
       assert(_.isFunction(myModularizer.modules.definitions[MODULE_NAME].callback));
       assert(myModularizer.modules.definitions[MODULE_NAME].callback === moduleDef);
     });
+
+    it('should pass prerequisite modules in order to the definition function', function() {
+      var MY_MODULE = 'my.module.1',MY_2ND_MODULE = 'my.module.2',MY_3RD_MODULE = 'my.module.3',
+      myModularizer = new window.Modularizer({
+        loader : function(){}
+      });
+
+      myModularizer.define(MY_MODULE,function(){
+        return {
+          name : MY_MODULE
+        };
+      });
+      myModularizer.define(MY_2ND_MODULE,function(){
+        return {
+          name : MY_2ND_MODULE
+        };
+      });
+      myModularizer.define(MY_3RD_MODULE,[MY_MODULE,MY_2ND_MODULE],function(first,second){
+        first.name.should.be.eql(MY_MODULE);
+        second.name.should.be.eql(MY_2ND_MODULE);
+        return {
+          name : MY_3RD_MODULE
+        };
+      });
+
+      myModularizer.require(MY_3RD_MODULE,function(third){
+        third.name.should.be.eql(MY_3RD_MODULE);
+      });
+    });
   });
 
 });

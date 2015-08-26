@@ -5,8 +5,6 @@ describe('Modularizer Configuration', function() {
   // Create a fake global `window` and `document` object and inject default script
   dom.init(true);
 
-
-
   it('should use the default config when none is provided (other than loader which is auto applied)', function() {
     var myModularizer = new window.Modularizer();
     // omit loader because a mod
