@@ -3,7 +3,6 @@
   "version": "0.2.0",
   "main": "modularizer.js",
   "devDependencies": {
-    "jasmine": "~2.3.4"
   },
   "ignore": [],
   "keywords": [
