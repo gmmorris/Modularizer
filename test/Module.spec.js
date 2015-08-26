@@ -62,11 +62,6 @@ describe('Modularizer Module management', function() {
     });
   });
 
-  describe('require()', function() {
-    it('', function() {
-      assert(false);
-    });
-  });
   describe('knows()', function() {
     it('should return false if an invalid module is requested', function() {
       var myModularizer = new window.Modularizer({
@@ -134,12 +129,151 @@ describe('Modularizer Module management', function() {
       assert(myModularizer.knows(MY_MODULE));
     });
   });
-  describe('fetchResource()', function() {
 
-    it('', function() {
-      assert(false);
+
+  describe('require()', function() {
+    it('should throw an error if no required module is specified', function() {
+      var myModularizer = new window.Modularizer({
+        loader : function(){}
+      });
+
+      expect(function(){
+        myModularizer.require();
+      }).to.throw(myModularizer.Error);
+    });
+    it('should throw an error if an invalid module is specified', function() {
+      var myModularizer = new window.Modularizer({
+        loader : function(){}
+      });
+
+      expect(function(){
+        myModularizer.require('');
+      }).to.throw(myModularizer.Error);
+    });
+    it('should throw an error for an undefined module requirment', function() {
+      var myModularizer = new window.Modularizer({
+        loader : function(){}
+      });
+
+      expect(function(){
+        myModularizer.require('my.module');
+      }).to.throw(myModularizer.Error);
+    });
+    it('should throw an error for an undefined module requirment even when included with multiple modules', function() {
+      var myModularizer = new window.Modularizer({
+        loader : function(){}
+      }), MODULE_NAME = 'my.module', NON_EXISTANT_MODULE_NAME = 'my.missing.module';
+
+      myModularizer.define(MODULE_NAME,function(){});
+
+      expect(function(){
+        myModularizer.require([MODULE_NAME,NON_EXISTANT_MODULE_NAME]);
+      }).to.throw(myModularizer.Error);
+    });
+    it('should load defined but unloaded modules', function(done) {
+      var PATH = '/path/to/file.js', MY_MODULE = 'my.module',
+      myModularizer = new window.Modularizer({
+        loader : function(){
+          myModularizer.define(MY_MODULE,function(){
+            return {};
+          });
+        }
+      });
+
+      myModularizer.register(PATH).defines(MY_MODULE);
+
+      myModularizer.require(MY_MODULE,function(){
+        done();
+      });
+    });
+    it('should throw an error when a defined but unloaded module is required in synchronous mode', function() {
+      var PATH = '/path/to/file.js', MY_MODULE = 'my.module',
+      myModularizer = new window.Modularizer({
+        loader : function(){
+          myModularizer.define(MY_MODULE,function(){
+            return {};
+          });
+        }
+      });
+
+      myModularizer.register(PATH).defines(MY_MODULE);
+
+      expect(function(){
+        myModularizer.require(MY_MODULE,function(){
+        },{},
+          // syncro = true
+          true);
+      }).to.throw(myModularizer.Error);
+    });
+    it('should pass the required modules, in order, to the callback when succesful', function(done) {
+      var MY_MODULE = 'my.module.1',MY_2ND_MODULE = 'my.module.2',MY_3RD_MODULE = 'my.module.3',
+      myModularizer = new window.Modularizer({
+        loader : function(){}
+      });
+
+      myModularizer.define(MY_MODULE,function(){
+        return {
+          name : MY_MODULE
+        };
+      });
+      myModularizer.define(MY_2ND_MODULE,function(){
+        return {
+          name : MY_2ND_MODULE
+        };
+      });
+      myModularizer.define(MY_3RD_MODULE,function(){
+        return {
+          name : MY_3RD_MODULE
+        };
+      });
+
+      myModularizer.require([MY_MODULE,MY_2ND_MODULE,MY_3RD_MODULE],function(first,second,third){
+        first.name.should.be.eql(MY_MODULE);
+        second.name.should.be.eql(MY_2ND_MODULE);
+        third.name.should.be.eql(MY_3RD_MODULE);
+        done();
+      });
+    });
+    it('should call the callback in the supplied context when succesful', function() {
+      var MY_MODULE = 'my.module.1',myContext = {},
+      myModularizer = new window.Modularizer({
+        loader : function(){}
+      });
+
+      myModularizer.define(MY_MODULE,function(){
+        return {
+          name : MY_MODULE
+        };
+      });
+
+      myModularizer.require(MY_MODULE,function(){
+        assert(myContext === this);
+      },myContext);
+    });
+    it('should call the callback in the global scope context when no context is specified', function() {
+      var MY_MODULE = 'my.module.1',myContext = {},
+      myModularizer = new window.Modularizer({
+        loader : function(){}
+      });
+
+      myModularizer.define(MY_MODULE,function(){
+        return {
+          name : MY_MODULE
+        };
+      });
+
+      myModularizer.require(MY_MODULE,function(){
+        assert(window === this);
+      });
     });
   });
+
+  //describe('fetchResource()', function() {
+  //
+  //  it('', function() {
+  //    assert(false);
+  //  });
+  //});
 
   describe('define()', function() {
 

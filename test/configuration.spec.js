@@ -1,8 +1,11 @@
-var dom = require('./utils/dom.js'), _ = require('underscore'), chai = require('chai'), expect = chai.expect, assert = require('simple-assert');
+var dom = require('./utils/dom.js'), _ = require('underscore'), chai = require('chai'), expect = chai.expect, assert = require('simple-assert'),
+  JQUERY_LIB = "./node_modules/jquery/dist/jquery.js";
 
 describe('Modularizer Configuration', function() {
   // Create a fake global `window` and `document` object and inject default script
   dom.init(true);
+
+
 
   it('should use the default config when none is provided (other than loader which is auto applied)', function() {
     var myModularizer = new window.Modularizer();
@@ -20,7 +23,7 @@ describe('Modularizer Configuration', function() {
   });
 
   it('should detect a local jQuery instance by default as its loader', function(done) {
-    dom.init(true,true).inject("https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js",null, function(){
+    dom.init(true,true).inject(JQUERY_LIB,null, function(){
       var myModularizer = new window.Modularizer();
       assert(myModularizer.config.loader === window.$.getScript);
       done();
@@ -28,7 +31,7 @@ describe('Modularizer Configuration', function() {
   });
 
   it('should ignore a local jQuery instance when configured detectJQuery = false', function(done) {
-    dom.init(true,true).inject("https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js",null, function(){
+    dom.init(true,true).inject(JQUERY_LIB,null, function(){
       var myModularizer = new window.Modularizer({
         detectJQuery : false
       });
@@ -40,7 +43,7 @@ describe('Modularizer Configuration', function() {
 
   it('should allow a custom loader function to be specified', function(done) {
     var myLoader = function(){};
-    dom.init(true).inject("https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js",null, function(){
+    dom.init(true).inject(JQUERY_LIB,null, function(){
       var myModularizer = new window.Modularizer({
         loader : myLoader
       });

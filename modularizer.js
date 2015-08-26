@@ -652,7 +652,7 @@
 			}
 		});
 
-		context = context || (context = {});
+		context = context || window;
 
 		// make sure the requested module (resource) is inside an array
 		if (typeof(dependancies) === 'string') {
