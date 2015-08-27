@@ -234,7 +234,7 @@
           }
         }
       }
-      return (state === RESOURCE_STATE.loaded);
+      return (this.state === RESOURCE_STATE.loaded);
     },
     load: function() {
       this.loading(true);
