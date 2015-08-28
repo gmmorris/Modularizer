@@ -27,7 +27,7 @@
 
     <div id="content-wrapper">
       <div class="inner clearfix">
-        <section id="main-content">
+        <p id="main-content">
           <h1>
 <a id="modularizer-" class="anchor" href="#modularizer-" aria-hidden="true"><span class="octicon octicon-link"></span></a>Modularizer <a href="https://travis-ci.org/gmmorris/Modularizer"><img src="https://travis-ci.org/gmmorris/Modularizer.svg" alt="Build Status"></a>
 </h1>
@@ -228,11 +228,12 @@ The beauty of RequireJS is that it is a generic, all around, package manager. On
 <p>The above example defines a module, identified as <em>View.HelloMessage</em>, which is actually a React View.
 Whenever the application needs to render this type of view component, it will require the 'View.HelloMessage' module and in return it will receive the React class which can be used to create instances of that module.</p>
 
-<p>A definition uses the following signature: function(module, dependancies, callback)
-1. <strong>module</strong> The name of the module. Must be a String.
-2. <strong>dependancies</strong> Optional. The dependancies this module has. An array of strings, each string a module name, which will be fetched before this module definition can be executed.
-3. <strong>callback</strong> A function which defines the module. This function is executed only once - the first time the module is required, and it's return value will be passed to anyone requiring the module throughout the system.</p>
-
+<p>A definition uses the following signature: function(module, dependancies, callback)</p>
+<ol>
+  <li><strong>module</strong> The name of the module. Must be a String.</li>
+  <li><strong>dependancies</strong> Optional. The dependancies this module has. An array of strings, each string a module name, which will be fetched before this module definition can be executed.</li>
+  <li><strong>callback</strong> A function which defines the module. This function is executed only once - the first time the module is required, and it's return value will be passed to anyone requiring the module throughout the system.</li>
+</ol>
 <h1>
 <a id="requiring-a-module" class="anchor" href="#requiring-a-module" aria-hidden="true"><span class="octicon octicon-link"></span></a>Requiring a module</h1>
 
@@ -252,12 +253,13 @@ If the module is unknown Modularizer will either throw an error or oush a callba
   </code>
 </pre>
 
-<p>The signature for require() is thus: function(dependancies, callback, context, synchronous)
-1. <strong>dependancies</strong> Either String or Array of Strings. The modules to require, which will be passed as arguments to the callback
-2. <strong>callback</strong>  Function. The callback which will receive the module instances.
-3. <strong>context</strong> Object. The context in which the callback will be executed.
-4. <strong>synchronous</strong> Boolean. Should the execution be synchronous or not (by default, not, hence False). If synchronous is required (True) then an error will be thrown if a required module has not yet been defined, even if the Package knows which resources contains the module, it won't try and load the file, as that would require an asynchronous procedure.</p>
-
+<p>The signature for require() is thus: function(dependancies, callback, context, synchronous)</p>
+  <ol>
+    <li><strong>dependancies</strong> Either String or Array of Strings. The modules to require, which will be passed as arguments to the callback</li>
+    <li><strong>callback</strong>  Function. The callback which will receive the module instances.</li>
+    <li><strong>context</strong> Object. The context in which the callback will be executed.</li>
+    <li><strong>synchronous</strong> Boolean. Should the execution be synchronous or not (by default, not, hence False). If synchronous is required (True) then an error will be thrown if a required module has not yet been defined, even if the Package knows which resources contains the module, it won't try and load the file, as that would require an asynchronous procedure.</li>
+  </ol>
 <h1>
 <a id="special-features" class="anchor" href="#special-features" aria-hidden="true"><span class="octicon octicon-link"></span></a>Special features</h1>
 
