@@ -71,32 +71,80 @@
   };
 
   // Current version of the library.
-  Modularizer.VERSION = '0.0.1';
+  Modularizer.VERSION = '0.2.0';
 
   // default config
   Modularizer.config = {
-    /* should use console log messages */
+    /**
+     *  Should we use console to log messages?
+     *  True/False
+     *  */
     debug: false,
-    /* should timeouts be narrowed down */
-    narrowDownTimeouts: false,
-    /* no cachbuster by default */
+    /**
+     * Cache Buster value to add to all JS scripts added by the loader.
+     * To allow maximum flexibility the Cache buster makes no assumptions other than it's location being
+     * at the end of the URI.
+     * This allows you to make it a parameter, like '?cb=XXX', or any other postfix you wish on the URL.
+     * We found it comfortable to use the hash of the file's last Git commit, which promised us a clear cache
+     * every time the file was changed, rather than every deployment.
+     * */
     cb: false,
-    /* a loader function is provided by default, but we do try and detect jQuery first */
+    /**
+     * A loader function is provided by default, but we do try and detect jQuery first and use that instead if possible.
+     * The *loader* function takes either a JS function or a Boolean.
+     * True - This value tells Modularizer that it should use a loader, but doesn't tell it which. If the *detectJQuery* config
+     *        is set to True, then Modularizer will first try and find jQuery and use that, otherwise it uses an internal file loader.
+     * False - Don't try and load missing files. If the required Module isn't defined manually - Modularizer will treat it as a lost
+     *        cause and won't try and fetch it on it's own.
+     * func() - If a function is provided Modularizer will call it every time a file needs to be fetched for a module's definition.
+     *        The syntax for this function is thus: function(filePath, callback)
+     *        filePath : The URL of the file that needs to be loaded
+     *        callback : A callback for the loader to call when it has fetched the file
+     * */
     loader: true,
     detectJQuery: true,
-    /* by default give a 3 second timeout */
+    /**
+     *  Should timeouts be narrowed down?
+     *  When the modularizer is told to fetch a module definition it injects the resource which, it believes,
+     *  contains the module and waits for the module definition to actually take place.
+     *  If it waits too long, it triggers a "timeout" and throws an exception.
+     *  How long it waits is defined by the *timeout* config, which by default, sets a 3 second timeout.
+     **/
     timeout: 3000,
+    /**
+     *  Once a timeout is triggered we can simply throw an error, for the system to deal with, or we can go digging in
+     *  the definitions to figure out why the timeout took place.
+     *  There are several different reasons which can cause a timeout - a missing dependancy, or a circular reference causing
+     *  a deadlock.
+     *  Figuring out these reasons can take time and be a complex analysis, so for critical environments, or when a missing module
+     *  can be ignored with an appropriate fallback, it may be beneficial to skip this analysis.
+     *  Hence, by default, we set this option to false, which means a generic error will be thrown specifying the module's name
+     *  but not the missing dependancy or circular reference.
+     *  It is recommended to set this configuration to True for Dev environments where it more important to identify the actual
+     *  problem.
+     *  */
+    narrowDownTimeouts: false,
+    /***
+     * Tag base is the base URL which is used for all resources.
+     * When a resource is defined, for example, at 'view/homepage/header.js' and the base configuration is set as 'http://www.gidi.io/static/',
+     * the Modularizer loader will specify the whole URL, 'http://www.gidi.io/static/view/homepage/header.js', as the resource's
+     * location.
+     */
     base: '',
     /**
-     * How should requirement which are defined for a module which is unknown be treated? Strictly or Leniently?
-     * True - yes, treat strictly and hence throw an error.
+     * How should requirements which are defined for a module which is unknown be treated? Strictly or Leniently?
+     * True - yes, treat strictly and hence throw an error when an unknown module is required.
      * False - no, treat leniently, and hence only throw an error when an actual requirement is made, rather than defined.
+     *
+     * This is very comfortable for situations where you have dynamically defined modules, which are created at runtime.
+     * We found this very useful for injecting Mustache Template definitions which are fetched externally from Modularizer,
+     * but required by modules inside of our Modularizer packages.
      * */
     strictRequirment: true,
     /***
      * A string or array of strings with regex matches which will be treated as exceptions for the strictRequirment mode.
      * This means that if these values are matched with a required resource, then they will be treated in the opposite to the specified mode.
-     * So if strictRequirment is set to true, the matched modules will be treated leniently and vi
+     * So if strictRequirment is set to true, the matched modules will be treated leniently and visa versa.
      */
     requirementExceptions: null,
     /***
