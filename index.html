@@ -49,8 +49,11 @@
 <p>Creating a new package couldn't be simpler.
 It is done by creating a new instance of the Modularizer Constructor function, like so:</p>
 
-<pre><code>var myModularizer = new Modularizer();
-</code></pre>
+<pre>
+  <code>
+    var myModularizer = new Modularizer();
+  </code>
+</pre>
 
 <p>From that moment you have a package, accessible through the <em>myModularizer</em> variable, into which you can define modules and resources.</p>
 
@@ -61,7 +64,8 @@ It is done by creating a new instance of the Modularizer Constructor function, l
 
 <p>The following is the default config:</p>
 
-<pre><code>
+<pre>
+  <code>
   // default config
   Modularizer.config = {
     /**
@@ -144,11 +148,14 @@ It is done by creating a new instance of the Modularizer Constructor function, l
      */
     optionalRequirment: null
   };
-</code></pre>
+</code>
+</pre>
 
 <p>When you create your package you can override these configurations like so:</p>
 
-<pre><code>var myModularizer = new Modularizer({
+<pre>
+  <code>
+    var myModularizer = new Modularizer({
       // Very harsh cache buster, every file request will break the cache ;)
       cb : '?cb=' + (new Date).getTime(), 
       loader: function(filePath, callback){ ... },
@@ -156,8 +163,9 @@ It is done by creating a new instance of the Modularizer Constructor function, l
       detectJQuery: false
       // 5 seconds
       timeout: 5000  
-});
-</code></pre>
+    });
+  </code>
+</pre>
 
 <h1>
 <a id="defining-a-resource" class="anchor" href="#defining-a-resource" aria-hidden="true"><span class="octicon octicon-link"></span></a>Defining a resource</h1>
@@ -167,22 +175,28 @@ It is done by creating a new instance of the Modularizer Constructor function, l
 <p>A resource is an external file that contains a module or a several modules.
 We can tell our package to expect a specific file to contain a specific module, like so:</p>
 
-<pre><code>myModularizer.register("view/homepage/header.js").defines('View.Header');
-</code></pre>
+<pre>
+  <code>
+    myModularizer.register("view/homepage/header.js").defines('View.Header');
+  </code>
+</pre>
 
 <p>Which means Modularizer will fetch the file <em>header.js</em> when someone requires the module <em>View.Header</em>.</p>
 
 <p>A resource can also contain several modules, such as:</p>
 
-<pre><code>myModularizer.register("app/booking.js")
-    .defines('Model.BookingBasket')
-    .defines('Model.PaymentMethod')
-    .defines('Collection.Products')
-    .defines('Controller.API.Booking')
-    .defines('View.Booking.Header')
-    .defines('View.Booking.CardDetails')
-    .defines('View.Booking.Submission');
-</code></pre>
+<pre>
+  <code>
+    myModularizer.register("app/booking.js")
+      .defines('Model.BookingBasket')
+      .defines('Model.PaymentMethod')
+      .defines('Collection.Products')
+      .defines('Controller.API.Booking')
+      .defines('View.Booking.Header')
+      .defines('View.Booking.CardDetails')
+      .defines('View.Booking.Submission');
+  </code>
+</pre>
 
 <p>This tells Modularizer that once someone requires any one of the modules in that resource, it  should load the file <em>app/booking.js</em> which will result in all those modules being defined in the package.</p>
 
@@ -199,14 +213,17 @@ The beauty of RequireJS is that it is a generic, all around, package manager. On
 
 <p>The definition is done like so:</p>
 
-<pre><code>myModularizer.define('View.HelloMessage',function(){
+<pre>
+  <code>
+    myModularizer.define('View.HelloMessage',function(){
       return React.createClass({
         render: function() {
           return &lt;div&gt;Hello {this.props.name}&lt;/div&gt;;
         }
       });
-});
-</code></pre>
+    });
+  </code>
+</pre>
 
 <p>The above example defines a module, identified as <em>View.HelloMessage</em>, which is actually a React View.
 Whenever the application needs to render this type of view component, it will require the 'View.HelloMessage' module and in return it will receive the React class which can be used to create instances of that module.</p>
@@ -227,10 +244,13 @@ Otherwise, if the module has already been defined, it is instantiated and return
 Otherwise, if the module hasn't even been defined, it's resource is loaded.
 If the module is unknown Modularizer will either throw an error or oush a callback into a queue and wait for the module to be defined (depends on the configuration of the <strong>strictRequirment</strong> config).</p>
 
-<pre><code>myModularizer.require('App.Init',function(ApplicationInitializer){
+<pre>
+  <code>
+    myModularizer.require('App.Init',function(ApplicationInitializer){
      //...
-});
-</code></pre>
+    });
+  </code>
+</pre>
 
 <p>The signature for require() is thus: function(dependancies, callback, context, synchronous)
 1. <strong>dependancies</strong> Either String or Array of Strings. The modules to require, which will be passed as arguments to the callback
@@ -253,22 +273,24 @@ In order to prevent these dynamically defined modules from throwing an error due
 For example, our generic template component, defines these templates with the prefix <em>Template.</em> and hence every view module can require it's templates freely and when the template is injected it's module requirments will be fulfilled by modularizer and execution will continue freely.</li>
 </ol>
 
-<pre><code>
-var myModularizer = new Modularizer({
-      requirementExceptions: ['^Template\\..*']
-});
+<pre>
+  <code>
+  var myModularizer = new Modularizer({
+        requirementExceptions: ['^Template\\..*']
+  });
 
-//...
+  //...
 
-myModularizer.define('View.HelloMessage',['Template.HelloTemplate'], function(Template){
-      return React.createClass({
-        render: function() {
-          return Template;
-        }
-      });
-});
+  myModularizer.define('View.HelloMessage',['Template.HelloTemplate'], function(Template){
+        return React.createClass({
+          render: function() {
+            return Template;
+          }
+        });
+  });
 
-</code></pre>
+  </code>
+</pre>
         </section>
 
         <aside id="sidebar">
