@@ -1263,8 +1263,8 @@
   };
 
   var _ = {
-    isArray: Array.isArray || function(arr) {
-      return toString.call(arr) === '[object Array]';
+    isArray: Array.isArray || function(arg) {
+      return Object.prototype.toString.call(arg) === '[object Array]';
     },
     trim: function(str) {
       if(typeof str === 'string') {
